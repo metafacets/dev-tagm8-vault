@@ -12,8 +12,8 @@ class Tag
   def self.delete_tag(name) # redo
     if Tag.has_tag?(name)
       tag = Tag.get_tag(name)
-      parents = tag.parents
-      children = tag.children
+      parents = tag.parents.dup
+      children = tag.children.dup
       if parents && children
         parents.each do |parent|
           parent.add_children(children)
@@ -150,6 +150,7 @@ class Tag
   def add_children(children) @children |= children.to_a end
 
   def inspect; "Tag<name=#{name}, parents=#{pp_parents}, children=#{pp_children}>" end
+  def to_s; inspect end
 
 end
 
