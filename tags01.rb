@@ -9,7 +9,8 @@ class Tag
 
   def self.has_tag?(name) @@tags.has_key?(name) end
 
-  def self.delete_tag(name) # redo
+  def self.delete_tag(name)
+    # joins children to parents
     if Tag.has_tag?(name)
       tag = Tag.get_tag(name)
       parents = tag.parents.dup
@@ -90,11 +91,11 @@ class Tag
     end
   end
 
-  def delete_parent(tag_parent)
-    if has_parent?(tag_parent)
-      @parents.delete(tag_parent)
-      tag_parent.delete_child(self)
-      if !tag_parent.has_child? && !tag_parent.has_parent?
+  def delete_parent(tag)
+    if has_parent?(tag)
+      @parents.delete(tag)
+      tag.delete_child(self)
+      if !tag.has_child? && !tag.has_parent?
         Tag.delete_root(self)
         Tag.add_folksonomy(self)
       end
@@ -149,6 +150,11 @@ class Tag
 
   def add_children(children) @children |= children.to_a end
 
+  def get_descendents(descendents=[])
+    children.each {|child| descendents |= child.get_descendents(descendents)}
+    descendents |= children
+  end
+
   def inspect; "Tag<name=#{name}, parents=#{pp_parents}, children=#{pp_children}>" end
   def to_s; inspect end
 
@@ -162,5 +168,9 @@ Tag.add_tag(:dog, :mammal)
 puts "Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
 Tag.add_tag(:mammal, :animal)
 puts "Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
+puts "descendents= #{Tag.get_tag(:mouse).get_descendents}"
+puts "descendents= #{Tag.get_tag(:mammal).get_descendents}"
+puts "descendents= #{Tag.get_tag(:animal).get_descendents}"
 Tag.delete_tag(:mammal)
 puts "Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
+puts "descendents= #{Tag.get_tag(:animal).get_descendents}"
