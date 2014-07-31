@@ -16,14 +16,12 @@ class Tag
       children = tag.children
       if parents && children
         parents.each do |parent|
-          tag_parent = Tag.get_tag(parent)
-          tag_parent.add_children(children)
-          tag_parent.delete_child(name)
+          parent.add_children(children)
+          parent.delete_child(tag)
         end
         children.each do |child|
-          tag_child = Tag.get_tag(child)
-          tag_child.add_parents(parents)
-          tag_child.delete_parent(name)
+          child.add_parents(parents)
+          child.delete_parent(tag)
         end
       end
       @@tags.delete(name)
@@ -39,38 +37,38 @@ class Tag
       this = Tag.new(name)
     end
     if parent.nil?
-      Tag.add_folksonomy(name) if new
+      Tag.add_folksonomy(this) if new
     else
-      Tag.new(parent) if !Tag.has_tag?(parent)
-      this.add_parent(parent)
+      Tag.has_tag?(parent) ? tag_parent = Tag.get_tag(parent) : tag_parent = Tag.new(parent)
+      this.add_parent(tag_parent)
     end
   end
 
   def self.get_roots; @@roots end
 
-  def self.has_root?(name) @@roots.include?(name) end
+  def self.has_root?(tag) @@roots.include?(tag) end
 
-  def self.delete_root(name) @@roots.delete(name) end
+  def self.delete_root(tag) @@roots.delete(tag) end
 
-  def self.add_root(name)
-    @@roots += [name] if !Tag.has_root?(name)
+  def self.add_root(tag)
+    @@roots += [tag] if !Tag.has_root?(tag)
   end
 
   def self.get_folksonomy; @@folksonomy end
 
-  def self.has_folksonomy?(name) @@folksonomy.include?(name) end
+  def self.has_folksonomy?(tag) @@folksonomy.include?(tag) end
 
-  def self.delete_folksonomy(name) @@folksonomy.delete(name) end
+  def self.delete_folksonomy(tag) @@folksonomy.delete(tag) end
 
-  def self.add_folksonomy(name)
-    @@folksonomy += [name] if !Tag.has_folksonomy?(name)
+  def self.add_folksonomy(tag)
+    @@folksonomy += [tag] if !Tag.has_folksonomy?(tag)
   end
 
   def initialize(name)
     @name = name
     @parents = []
     @children = []
-    @items = []     # support
+    @items = []     # to be supported
     @@tags[name] = self
   end
 
@@ -78,37 +76,42 @@ class Tag
 
   def parents; @parents end
 
-  def has_parent?(parent=nil)
-    if parent.nil?
+  def pp_parents
+    a_p = []
+    parents.each {|parent| a_p += [parent.name] }
+    '['+a_p.join(', ')+']'
+  end
+
+  def has_parent?(tag=nil)
+    if tag.nil?
       !parents.to_a.empty?
     else
-      parents.include?(parent)
+      parents.include?(tag)
     end
   end
 
-  def delete_parent(parent)
-    if has_parent?(parent)
-      @parents.delete(parent)
-      tag_parent = Tag.get_tag(parent)
-      tag_parent.delete_child(name)
+  def delete_parent(tag_parent)
+    if has_parent?(tag_parent)
+      @parents.delete(tag_parent)
+      tag_parent.delete_child(self)
       if !tag_parent.has_child? && !tag_parent.has_parent?
-        Tag.delete_root(name)
-        Tag.add_folksonomy(name)
+        Tag.delete_root(self)
+        Tag.add_folksonomy(self)
       end
     end
   end
 
-  def add_parent(parent)
-    if !has_parent?(parent)
-      @parents += [parent]
+  def add_parent(tag)
+    if !has_parent?(tag)
+      @parents += [tag]
       root = false
-      if Tag.has_folksonomy?(parent)
-        Tag.delete_folksonomy(parent)
+      if Tag.has_folksonomy?(tag)
+        Tag.delete_folksonomy(tag)
         root = true
       end
-      Tag.add_root(parent) if root || !Tag.get_tag(parent).has_parent?
-      Tag.delete_root(name)
-      Tag.get_tag(parent).add_child(name)
+      Tag.add_root(tag) if root || !tag.has_parent?
+      Tag.delete_root(self)
+      tag.add_child(self)
     end
   end
 
@@ -116,32 +119,41 @@ class Tag
 
   def children; @children end
 
-  def has_child?(child=nil)
-    if child.nil?
+  def pp_children
+    a_p = []
+    children.each {|child| a_p += [child.name] }
+    '['+a_p.join(', ')+']'
+  end
+
+  def has_child?(tag=nil)
+    if tag.nil?
       !children.to_a.empty?
     else
-      children.include?(child)
+      children.include?(tag)
     end
   end
 
-  def delete_child(name)
-    if has_child?(name)
-      @children.delete(name)
-      if @children.empty? && Tag.has_root?(name)
-        Tag.delete_root(name)
-        Tag.add_folksonomy(name)
+  def delete_child(tag)
+    if has_child?(tag)
+      @children.delete(tag)
+      if @children.empty? && Tag.has_root?(tag)
+        Tag.delete_root(tag)
+        Tag.add_folksonomy(tag)
       end
     end
   end
 
-  def add_child(name)
-    @children += [name] if !has_child?(name)
+  def add_child(tag)
+    @children += [tag] if !has_child?(tag)
   end
 
   def add_children(children) @children |= children.to_a end
 
+  def inspect; "Tag<name=#{name}, parents=#{pp_parents}, children=#{pp_children}>" end
+
 end
 
+require 'pp'
 Tag.add_tag(:mouse,:animal)
 puts "Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
 Tag.add_tag(:cat, :mammal)
