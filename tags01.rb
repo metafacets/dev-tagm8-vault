@@ -164,7 +164,10 @@ class Tag
     empty_children
   end
 
-  def add_descendents(source_tag) add_children(source_tag.children) end
+  def get_descendents(descendents=[])
+    children.each {|child| descendents |= child.get_descendents(descendents)}
+    descendents |= children
+  end
 
   def delete_branch
     # delete self and its descendents
