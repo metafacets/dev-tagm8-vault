@@ -45,6 +45,10 @@ class Tag
     end
   end
 
+  def self.subtract_tags(tags)
+    tags.each {|tag| @@tags.delete(tag.name.to_sym)}
+  end
+
   def self.get_roots; @@roots end
 
   def self.has_root?(tag) @@roots.include?(tag) end
@@ -55,6 +59,8 @@ class Tag
     @@roots += [tag] if !Tag.has_root?(tag)
   end
 
+  def self.subtract_roots(tags) @@roots -= tags end
+
   def self.get_folksonomy; @@folksonomy end
 
   def self.has_folksonomy?(tag) @@folksonomy.include?(tag) end
@@ -64,6 +70,8 @@ class Tag
   def self.add_folksonomy(tag)
     @@folksonomy += [tag] if !Tag.has_folksonomy?(tag)
   end
+
+  def self.subtract_folksonomy(tags) @@folksonomy -= tags end
 
   def initialize(name)
     @name = name
@@ -144,6 +152,8 @@ class Tag
     end
   end
 
+  def empty_children; @child = [] end
+
   def add_child(tag)
     @children += [tag] if !has_child?(tag)
   end
@@ -151,8 +161,35 @@ class Tag
   def add_children(children) @children |= children.to_a end
 
   def get_descendents(descendents=[])
-    children.each {|child| descendents |= child.get_descendents(descendents)}
-    descendents |= children
+    children.each {|child| descendents |= child.get_descendents(children)}
+  end
+
+  def delete_descendents
+    descendents = get_descendents
+    Tag.subtract_tags(descendents)
+    Tag.subtract_roots(descendents)
+    Tag.subtract_folksonomy(descendents)
+    empty_children
+  end
+
+  def add_descendents(source_tag)
+    children = source_tag.children
+    add_children(children)
+    root = false
+    if Tag.has_folksonomy?(self)
+      Tag.delete_folksonomy(self)
+      root = true
+    end
+    Tag.add_root(self) if root || !has_parent?
+    children.each {|child| child.add_parents([self])}
+    # source_tag.children.each {|child| child.add_parent(self)
+  end
+
+  def delete_branch
+    # delete self and its descendents
+    delete_descendents
+    parent.delete_child(self)
+    @@tags.delete(name)
   end
 
   def inspect; "Tag<name=#{name}, parents=#{pp_parents}, children=#{pp_children}>" end
@@ -167,6 +204,10 @@ Tag.add_tag(:cat, :mammal)
 Tag.add_tag(:dog, :mammal)
 puts "Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
 Tag.add_tag(:mammal, :animal)
+Tag.add_tag(:fish, :animal)
+Tag.add_tag(:carp, :fish)
+Tag.add_tag(:herring, :fish)
+Tag.add_tag(:insect, :animal)
 puts "Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
 puts "descendents= #{Tag.get_tag(:mouse).get_descendents}"
 puts "descendents= #{Tag.get_tag(:mammal).get_descendents}"
