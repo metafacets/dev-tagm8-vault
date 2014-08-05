@@ -15,11 +15,9 @@ class Tag
       tag = Tag.get_tag(name)
       parents = tag.parents.dup
       children = tag.children.dup
-      if parents && children
-        parents.each do |parent|
-          parent.add_children(children, true)
-          parent.delete_child(tag)
-        end
+      parents.each do |parent|
+        parent.add_children(children, true) if children
+        parent.delete_child(tag)
       end
       @@tags.delete(name)
     end
@@ -102,13 +100,25 @@ class Tag
     end
   end
 
-  def add_parents(tags, link=false)
-    @parents |= tags.to_a
-    if link
-      register_child
-      tags.each do |tag|
-        tag.add_children([self])
-        tag.register_parent
+  def add_parents(tags, link=false, dag=false)
+    # check to ensure DAG
+    if tags
+      @parents += tags.to_a
+      if link
+        register_child
+        descendents = get_descendents if dag
+        tags.each do |tag|
+          tag.add_children([self])
+          tag.register_parent
+          if dag
+            loopers = []
+            loops = tag.get_ancestors & descendents
+            loops.each {|loop| loopers << [[loop.get_depth(self,descendents),loop]]}
+            loopers.sort_by{|x|x[0]}.reverse.each do |looper|
+              looper[1].delete_parent(looper[1].get_parents & descendents)
+            end
+          end
+        end
       end
     end
   end
@@ -140,6 +150,7 @@ class Tag
   end
 
   def add_children(tags, link=false)
+    # check to ensure DAG
     @children |= tags.to_a
     if link
       register_parent
@@ -152,8 +163,32 @@ class Tag
 
   def empty_children; @child = [] end
 
+  def get_ancestors(ancestors=[])
+    parents.each {|parent| ancestors |= parent.get_ancestors(parents)}
+    ancestors
+  end
+
+  def get_depth(root,branch)
+    # walks up branch from self to root returning depth
+    # dag support requirs nodes outside branch are ignored
+    if parents.include?(root)
+      depth = 1
+    else
+      parent = (parents & branch).pop
+      parent.nil? ? depth = 0 : depth = parent.get_depth(root,branch) + 1
+    end
+    depth
+  end
+
   def get_descendents(descendents=[])
     children.each {|child| descendents |= child.get_descendents(children)}
+    descendents
+  end
+
+  def get_descendents1(descendents=[])
+    # alternative to get_descendents
+    children.each {|child| descendents |= child.get_descendents}
+    descendents |= children
   end
 
   def delete_descendents
@@ -164,10 +199,7 @@ class Tag
     empty_children
   end
 
-  def get_descendents(descendents=[])
-    children.each {|child| descendents |= child.get_descendents(descendents)}
-    descendents |= children
-  end
+  def add_descendents(child_tags) add_children(child_tags, true) end
 
   def delete_branch
     # delete self and its descendents
@@ -176,14 +208,22 @@ class Tag
     @@tags.delete(name)
   end
 
+  def add_branch(tag)
+    # if self is root add tag as new root else add tag as sibling of self
+  end
+
   def register_parent
-    Tag.delete_folksonomy(self) if Tag.has_folksonomy?(self)
-    Tag.add_root(self) if !has_parent?
+    if has_child?
+      Tag.delete_folksonomy(self) if Tag.has_folksonomy?(self)
+      Tag.add_root(self) if !has_parent?
+    end
   end
 
   def register_child
-    Tag.delete_folksonomy(self) if Tag.has_folksonomy?(self)
-    Tag.delete_root(self) if Tag.has_root?(self)
+    if has_parent?
+      Tag.delete_folksonomy(self) if Tag.has_folksonomy?(self)
+      Tag.delete_root(self) if Tag.has_root?(self)
+    end
   end
 
   def inspect; "Tag<name=#{name}, parents=#{pp_parents}, children=#{pp_children}>" end
@@ -200,12 +240,16 @@ puts "Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_fo
 Tag.add_tag(:mammal, :animal)
 Tag.add_tag(:fish, :animal)
 Tag.add_tag(:carp, :fish)
+Tag.add_tag(:carp, :food)
+Tag.add_tag(:carpette, :carp)
 Tag.add_tag(:herring, :fish)
 Tag.add_tag(:insect, :animal)
 puts "Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
 puts "descendents= #{Tag.get_tag(:mouse).get_descendents}"
 puts "descendents= #{Tag.get_tag(:mammal).get_descendents}"
 puts "descendents= #{Tag.get_tag(:animal).get_descendents}"
+puts "ancestors= #{Tag.get_tag(:carpette).get_ancestors}"
+puts "depth= #{Tag.get_tag(:carpette).get_depth(Tag.get_tag(:fish),Tag.get_tag(:fish).get_descendents)}"
 Tag.delete_tag(:mammal)
 puts "Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
 puts "descendents= #{Tag.get_tag(:animal).get_descendents}"
