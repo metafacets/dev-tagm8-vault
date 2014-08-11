@@ -36,19 +36,26 @@ class Tag
     end
   end
 
-  def self.add_tag(name, name_parent=nil)
-    if Tag.has_tag?(name)
-      new = false
-      tag = Tag.get_tag(name)
-    else
-      new = true
-      tag = Tag.new(name)
-    end
+  def self.add_tags(names, name_parent=nil)
+    tags = names.map {|name| Tag.get_lazy_tag(name)}.uniq
     if name_parent.nil?
-      Tag.add_folksonomy(tag) if new
+      tags.each {|tag| Tag.add_folksonomy(tag) if !tag.has_parent?}
     else
-      Tag.has_tag?(name_parent) ? tag_parent = Tag.get_tag(name_parent) : tag_parent = Tag.new(name_parent)
-      tag.add_parents([tag_parent],true,true)
+      Tag.get_lazy_tag(name_parent).add_children(tags,true,true)
+    end
+    puts "add_tags: tags=#{tags}"
+  end
+
+  def self.add_tag(name, name_parent=nil) Tag.add_tags([name],name_parent) end
+
+  def self.get_lazy_tag(node)
+    case
+      when node.class == 'Tag'
+        node
+      when Tag.has_tag?(node)
+        Tag.get_tag(node)
+      else
+        Tag.new(node)
     end
   end
 
@@ -94,6 +101,7 @@ class Tag
     @children = []
     @items = []     # to be supported
     @@tags[name] = self
+    #Tag.add_folksonomy(self)
   end
 
   def name; @name end
@@ -130,15 +138,20 @@ class Tag
   end
 
   def add_parents(tags, link=false, dag=false)
-    # check to ensure DAG
+    # ensure_dag by breaking loops on parent
     if !tags.to_a.empty?
       if link
         descendents = get_descendents if dag
         tags.each do |tag|
-          ancestors = get_ancestors
-          ancestors |= [tag]
           puts "add_parents 1: name=#{name}, parent=#{tag.name}"
-          ensure_dag(descendents,ancestors) if dag
+          if dag
+            if descendents.include?(tag)
+              ancestors = [tag]
+            else
+              ancestors = tag.get_ancestors
+            end
+            ensure_dag(descendents,ancestors)
+          end
           tag.add_children([self])
           puts "add_parents 2: self=#{tag}"
           tag.register_parent
@@ -152,14 +165,22 @@ class Tag
   end
 
   def add_children(tags, link=false, dag=false)
-    # check to ensure DAG
+    # ensure_dag by breaking loops on self
     if !tags.to_a.empty?
       if link
         ancestors = get_ancestors if dag
         tags.each do |tag|
-          descendents = get_descendents
-          descendents |= [tag]
-          ensure_dag(descendents, ancestors) if dag
+          puts "add_children 1: name=#{tag.name}, parent=#{name}"
+          if dag
+            descendents = tag.get_descendents
+            if ancestors.include?(tag)
+              descendents |= [self]
+              ancestors_temp = [self]
+            else
+              ancestors_temp = ancestors
+            end
+            tag.ensure_dag(descendents, ancestors_temp)
+          end
           tag.add_parents([self])
           tag.register_child
         end
@@ -167,21 +188,11 @@ class Tag
       @children |= tags.to_a
       register_parent if link
     end
-    #@children |= tags.to_a
-    #if link
-    #  register_parent
-    #  ancestors = get_ancestors if dag
-    #  tags.each do |tag|
-    #    tag.add_parents([self])
-    #    tag.register_child
-    #    tag.ensure_dag(tag.get_descendents, ancestors) if dag
-    #  end
-    #end
   end
 
   def ensure_dag(descendents,ancestors)
     # maintains directed acyclic graph by removing occurances of ancestors among descendents
-    # specifically by deleting that occurence parent which causes it to be a descendant
+    # specifically by deleting that occurence's parent which causes it to be a descendant
     loops = descendents & ancestors
     puts "ensure_dag: loops=#{loops}, self=#{self}, descendents=#{descendents}, ancestors=#{ancestors}"
     if !loops.empty?
