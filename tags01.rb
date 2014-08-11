@@ -170,9 +170,9 @@ class Tag
   end
 
   def ensure_dag(duplicate,descendents)
-    # maintains directed acyclic graph by removing duplicate from descendents
+    # maintains directed acyclic graph by removing duplicate from all descendents
     puts "ensure_dag: duplicate=#{duplicate}, self=#{self}, descendents=#{descendents}"
-    duplicate.delete_parent((duplicate.parents & descendents).pop)
+    (duplicate.parents & descendents).each {|parent| duplicate.delete_parent(parent)}
   end
 
   def children; @children end
