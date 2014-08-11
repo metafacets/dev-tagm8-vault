@@ -124,11 +124,6 @@ class Tag
       puts "delete_parent 2: self=#{self}"
       tag.delete_child(self)
       puts "delete_parent 3: self=#{self}, tag=#{tag}"
-      if !tag.has_child? && !tag.has_parent?
-        Tag.delete_root(self)
-        Tag.add_folksonomy(self)
-        puts "delete_parent 4: self=#{self}, tag=#{tag}"
-      end
     end
   end
 
@@ -139,7 +134,7 @@ class Tag
         descendents = get_descendents if dag
         tags.each do |tag|
           puts "add_parents 1: name=#{name}, parent=#{tag.name}"
-          ensure_dag(tag,descendents) if dag && descendents.include?(tag)
+          tag.ensure_dag(descendents) if dag && descendents.include?(tag)
           tag.add_children([self])
           puts "add_parents 2: self=#{tag}"
           tag.register_parent
@@ -159,7 +154,7 @@ class Tag
         ancestors = get_ancestors if dag
         tags.each do |tag|
           puts "add_children 1: name=#{tag.name}, parent=#{name}"
-          tag.ensure_dag(self,tag.get_descendents) if dag && ancestors.include?(tag)
+          ensure_dag(tag.get_descendents) if dag && ancestors.include?(tag)
           tag.add_parents([self])
           tag.register_child
         end
@@ -169,10 +164,10 @@ class Tag
     end
   end
 
-  def ensure_dag(duplicate,descendents)
-    # maintains directed acyclic graph by removing duplicate from all descendents
-    puts "ensure_dag: duplicate=#{duplicate}, self=#{self}, descendents=#{descendents}"
-    (duplicate.parents & descendents).each {|parent| duplicate.delete_parent(parent)}
+  def ensure_dag(descendents)
+    # maintains directed acyclic graph by removing self from all descendents
+    puts "ensure_dag: self=#{self}, descendents=#{descendents}"
+    (parents & descendents).each {|parent| delete_parent(parent)}
   end
 
   def children; @children end
@@ -194,14 +189,21 @@ class Tag
   def delete_child(tag)
     if has_child?(tag)
       @children.delete(tag)
-      if @children.empty? && Tag.has_root?(tag)
-        Tag.delete_root(tag)
-        Tag.add_folksonomy(tag)
+      if !has_child? && Tag.has_root?(self)
+        Tag.delete_root(self)
+        Tag.add_folksonomy(self)
+      end
+      if !tag.has_parent?
+        if tag.has_child?
+          Tag.add_root(tag)
+        else
+          Tag.add_folksonomy(tag)
+        end
       end
     end
   end
 
-   def empty_children; @child = [] end
+  def empty_children; @child = [] end
 
   def get_ancestors(ancestors=[])
     parents.each {|parent| ancestors |= parent.get_ancestors(parents)}
