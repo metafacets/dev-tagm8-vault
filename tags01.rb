@@ -22,7 +22,7 @@ class Tag
   end
 
   def self.delete_tag(name)
-    # joins children to parents
+    # deletes tag by name joining its children to its parents
     if Tag.has_tag?(name)
       tag = Tag.get_tag(name)
       parents = tag.parents.dup
@@ -270,6 +270,11 @@ class Tag
 
   def inspect; "Tag<name=#{name}, parents=#{pp_parents}, children=#{pp_children}>" end
   def to_s; inspect end
+
+  def childless_orphan?; !has_parent? && !has_child? end
+  def childless?; !has_child? end
+  def orphan?; !has_parent? end
+  def root?; orphan? && has_child? end
 
 end
 
