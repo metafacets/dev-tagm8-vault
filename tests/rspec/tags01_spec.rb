@@ -3,7 +3,7 @@ require 'rspec'
 require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\tags01.rb'
 
 describe Tag do
-  context 'childless orphan root and folk' do
+  context ':animal > :mouse, :car' do
     before(:all) do
       Tag.empty
       Tag.add_tag(:mouse, :animal)
@@ -12,15 +12,15 @@ describe Tag do
       @mouse = Tag.get_tag(:mouse)
       @car = Tag.get_tag(:car)
     end
-    it 'car is childless' do expect(@car).to be_childless end
-    it 'car is orphan' do expect(@car).to be_orphan end
+    it 'car has no children' do expect(@car).to_not have_child end
+    it 'car has no parents' do expect(@car).to_not have_parent end
     it 'car is folk' do expect(@car).to be_folk end
-    it 'animal is not childless' do expect(@animal).not_to be_childless end
-    it 'animal has child' do expect(@animal).to be_has_child end
+    it 'animal has child' do expect(@animal).to have_child end
+    it 'animal has no parents' do expect(@animal).to_not have_parent end
     it 'animal is not folk' do expect(@animal).to_not be_folk end
     it 'animal is root' do expect(@animal).to be_root end
-    it 'mouse is not orphan' do expect(@mouse).to_not be_orphan end
-    it 'mouse has parent' do expect(@mouse).to be_has_parent end
+    it 'mouse has no children' do expect(@mouse).to_not have_child end
+    it 'mouse has parent' do expect(@mouse).to have_parent end
     it 'mouse is not folk' do expect(@mouse).to_not be_folk end
     it 'mouse is not root' do expect(@mouse).to_not be_root end
   end
