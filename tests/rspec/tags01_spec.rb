@@ -15,6 +15,7 @@ describe Tag do
     it 'car has no children' do expect(@car).to_not have_child end
     it 'car has no parents' do expect(@car).to_not have_parent end
     it 'car is folk' do expect(@car).to be_folk end
+    it 'car is not root' do expect(@car).to_not be_root end
     it 'animal has child' do expect(@animal).to have_child end
     it 'animal has no parents' do expect(@animal).to_not have_parent end
     it 'animal is not folk' do expect(@animal).to_not be_folk end
