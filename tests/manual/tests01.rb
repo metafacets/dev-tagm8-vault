@@ -1,7 +1,7 @@
 require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\debug.rb'
 require 'pp'
-require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\tags01.rb'
-Debug.new class:['Tag']
+require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\tag.rb'
+
 Tag.add_tag(:mouse,:animal)
 puts "1. Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
 Tag.add_tags([:cat, :dog], :mammal)
@@ -29,4 +29,4 @@ puts "depth= #{Tag.get_tag(:carpette).get_depth(Tag.get_tag(:fish),Tag.get_tag(:
 Tag.delete_tag(:mammal)
 puts "8. Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
 puts "descendents= #{Tag.get_tag(:animal).get_descendents}"
-Debug.show(class:'Tag',note:'my note')
+Debug.show(class:'Tag',method:'test',note:2,level:2,vars:[['descendents',Tag.get_tag(:animal).get_descendents]])
