@@ -1,6 +1,6 @@
-require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\debug.rb'
+require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\debug.rb'
 require 'pp'
-require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\tag.rb'
+require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\tag.rb'
 
 Tag.add_tag(:mouse,:animal)
 puts "1. Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"

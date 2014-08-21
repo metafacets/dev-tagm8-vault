@@ -1,6 +1,6 @@
 require 'rspec'
 #require 'rspec-its'
-require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\tag.rb'
+require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\tag.rb'
 
 describe Tag do
   context ':animal > :mouse, :car' do

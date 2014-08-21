@@ -1,3 +1,5 @@
+require_relative 'debug.rb'
+Debug.new class:['Tag'] # comment out to turn off
 class Tag
   def self.empty?; !Tag.has_tag? && !Tag.has_root? && !Tag.has_folksonomy? end
 
@@ -118,12 +120,12 @@ class Tag
   end
 
   def delete_parent(tag)
-    puts "delete_parent 1: self=#{self}, tag=#{tag}"
+    Debug.show(class:self.class,method:__method__,note:'1',vars:[['self',self],['tag',tag]])
     if has_parent?(tag)
       @parents.delete(tag)
-      puts "delete_parent 2: self=#{self}"
+      Debug.show(class:self.class,method:__method__,note:'2',vars:[['self',self]])
       tag.delete_child(self)
-      puts "delete_parent 3: self=#{self}, tag=#{tag}"
+      Debug.show(class:self.class,method:__method__,note:'3',vars:[['self',self],['tag',tag]])
     end
   end
 
