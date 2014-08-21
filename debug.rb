@@ -1,53 +1,62 @@
+class DebugItems < Hash
+  def normalize!
+    add_defaults!
+    normalize_options!
+    normalize_vars!
+    normalize_level!
+  end
+  def add_defaults!
+    {class:nil,method:nil,note:nil,vars:nil,level:0}.each {|k,v| self[k] = v unless self.has_key?(k)}
+  end
+  def normalize_options!
+    [:class,:method,:note,:tags].each do |option|
+      opt = self[option]
+      self[option] = if opt.nil?
+                       []
+                     elsif opt.kind_of?(Array)
+                       each.map {|o| o.to_s}
+                     else
+                       [opt.to_s]
+                     end
+    end
+  end
+  def normalize_vars!
+    vars = []
+    vars = if vars.kind_of?(Array)
+             if self[:vars][0].kind_of?(Array)
+               self[:vars]
+             elsif self[:vars].size == 2
+               [self[:vars]]
+             end
+           end
+    self[:vars] = vars
+  end
+  def normalize_level!
+    self[:level] = [self[:level]]
+  end
+end
+
 class Debug
   @@outputs = []
-  def self.show(options={})
-#    puts "Debug.self.show: @@outputs=#{@@outputs}"
-    @@outputs.each do |output|
-      output.process(options)
-    end
+  def self.show(debug_items={})
+    puts "Debug.self.show 1: debug_line=#{debug_items}"
+    items = DebugItems[debug_items]
+    puts "Debug.self.show 2: line=#{items}"
+    items.normalize!
+    puts "Debug.self.show 3: opts=#{items}"
+    puts "Debug.self.show 4: @@outputs=#{@@outputs}"
+    @@outputs.each {|output| output.process(items)}
   end
-  def self.normalize(options)
-    default = {class:nil,method:nil,note:nil,vars:nil,level:0}
-    options = default.merge(options)
-#    puts "Debug.standardise 1: options=#{options}"
-    [:class,:method,:note,:tags].each do |criteria|
-      crit = options[criteria]
-      options[criteria] = if crit.nil?
-                            []
-                          elsif crit.kind_of?(Array)
-                            each.map {|o| o.to_s}
-                          else
-                            [crit.to_s]
-                          end
-    end
-#    puts "Debug.standardise 2: options=#{options}"
-    vars = if options[:vars].kind_of?(Array)
-             if options[:vars][0].kind_of?(Array)
-               options[:vars]
-             elsif options[:vars].size == 2
-               [options[:vars]]
-             else
-               []
-             end
-           else
-             []
-           end
-    options[:vars] = vars
-    options[:level] = [options[:level]]
-#    puts "Debug.standardise 3: options=#{options}"
-    options
-  end
-  attr_accessor :class, :method, :note, :vars, :level
-  def initialize(options={})
-    options.each {|k,v| instance_variable_set("@#{k}", v)}
+  attr_accessor :class, :method, :note, :vars, :level, :tags
+  def initialize(criteria={})
+    criteria.each {|k,v| instance_variable_set("@#{k}", v)}
     @@outputs |= [self]
 #    puts "Debug.new: @@outputs=#{@@outputs}"
   end
-  def process(options)
-    # options.normalize!
-    options = Debug.normalize(options)
+  def process(items)
+    # shows items if items satisfy criteria
     catch :done do
-      options.each do |k, v|
+      items.each do |k, v|
 #        puts "Debug.process 1: v=#{v}"
         ivs = "@#{k}"
         if instance_variable_defined?(ivs)
@@ -57,24 +66,24 @@ class Debug
           break if !iv.empty? && (iv|v).empty?
         end
       end
-#      puts "Debug.process 4: options=#{options}"
-      show(options)
+#      puts "Debug.process 4: items=#{items}"
+      show(items)
     end
   end
-  def show(options)
-    puts "Debug.show 1: options=#{options}"
-    out = options[:level][0] > 0 ? "#{'^'*options[:level][0]}" : ''
-    [:class,:method].each {|option| out += ".#{options[option][0]}" unless options[option].empty?}
-    unless options[:note].empty?
-      quote = options[:note][0].match(/^[0-9]+$/) ? '' : '"'
-      out += " #{quote}#{options[:note][0]}#{quote}"
+  def show(items)
+    puts "Debug.show 1: items=#{items}"
+    out = items[:level][0] > 0 ? "#{'^'*items[:level][0]}" : ''
+    [:class,:method].each {|item| out += ".#{items[item][0]}" unless items[item].empty?}
+    unless items[:note].empty?
+      quote = items[:note][0].match(/^[0-9]+$/) ? '' : '"'
+      out += " #{quote}#{items[:note][0]}#{quote}"
     end
     out.gsub!(/^(\^*)(\.)(.*)/,'\1\3')
     out.gsub!(/\^/,' ')
     out.gsub!(/^ *$/,'')
     out += ': ' unless out.empty?
     vars = ''
-    options[:vars].each { |var| vars += ", #{var[0]}=#{var[1]}" }
+    items[:vars].each { |var| vars += ", #{var[0]}=#{var[1]}" }
     out += vars.gsub(/^, /,'')
     puts "Debug.show 2: out=#{out}"
     puts out
