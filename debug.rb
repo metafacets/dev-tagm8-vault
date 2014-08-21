@@ -39,12 +39,12 @@ end
 class Debug
   @@outputs = []
   def self.show(debug_items={})
-    puts "Debug.self.show 1: debug_line=#{debug_items}"
+#    puts "Debug.self.show 1: debug_line=#{debug_items}"
     items = DebugItems[debug_items]
-    puts "Debug.self.show 2: line=#{items}"
+#    puts "Debug.self.show 2: line=#{items}"
     items.normalize!
-    puts "Debug.self.show 3: opts=#{items}"
-    puts "Debug.self.show 4: @@outputs=#{@@outputs}"
+#    puts "Debug.self.show 3: opts=#{items}"
+#    puts "Debug.self.show 4: @@outputs=#{@@outputs}"
     @@outputs.each {|output| output.process(items)}
   end
   attr_accessor :class, :method, :note, :vars, :level, :tags
@@ -61,8 +61,8 @@ class Debug
         ivs = "@#{k}"
         if instance_variable_defined?(ivs)
           iv = instance_variable_get(ivs)
-          puts "Debug.process 2: iv=#{iv}"
-          puts "Debug.process 3: iv|v=#{iv|v}"
+#          puts "Debug.process 2: iv=#{iv}"
+#          puts "Debug.process 3: iv|v=#{iv|v}"
           break if !iv.empty? && (iv|v).empty?
         end
       end
@@ -71,7 +71,7 @@ class Debug
     end
   end
   def show(items)
-    puts "Debug.show 1: items=#{items}"
+#    puts "Debug.show 1: items=#{items}"
     out = items[:level][0] > 0 ? "#{'^'*items[:level][0]}" : ''
     [:class,:method].each {|item| out += ".#{items[item][0]}" unless items[item].empty?}
     unless items[:note].empty?
@@ -85,7 +85,7 @@ class Debug
     vars = ''
     items[:vars].each { |var| vars += ", #{var[0]}=#{var[1]}" }
     out += vars.gsub(/^, /,'')
-    puts "Debug.show 2: out=#{out}"
+#    puts "Debug.show 2: out=#{out}"
     puts out
   end
 end
