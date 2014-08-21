@@ -1,5 +1,5 @@
 require_relative 'debug.rb'
-Debug.new class:['Tag'] # comment out to turn off
+Debug.new(class:'Tag',tags:[:b,:c]) # comment out to turn off
 class Tag
   def self.empty?; !Tag.has_tag? && !Tag.has_root? && !Tag.has_folksonomy? end
 
