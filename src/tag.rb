@@ -1,5 +1,5 @@
 require_relative 'debug.rb'
-Debug.new(class:'Tag',tags:[:b,:c]) # comment out to turn off
+#Debug.new(class:'Tag') # comment out to turn off
 class Tag
   def self.empty?; !Tag.has_tag? && !Tag.has_root? && !Tag.has_folksonomy? end
 
@@ -135,17 +135,17 @@ class Tag
       if link
         descendents = get_descendents if dag
         tags.each do |tag|
-          puts "add_parents 1: name=#{name}, parent=#{tag.name}"
+          Debug.show(class:self.class,method:__method__,note:'1',vars:[['name',name],['parent',tag.name]])
           tag.ensure_dag(descendents) if dag && descendents.include?(tag)
           tag.add_children([self])
-          puts "add_parents 2: self=#{tag}"
+          Debug.show(class:self.class,method:__method__,note:'2',vars:[['self',tag]])
           tag.register_parent
-          puts "add_parents 3: Roots = #{Tag.get_roots}, Folks = #{Tag.get_folksonomy}"
+          Debug.show(class:self.class,method:__method__,note:'3',vars:[['roots',Tag.get_roots],['folks',Tag.get_folksonomy]])
         end
       end
       @parents |= tags.to_a
       register_child if link
-      puts "add_parents 4: Roots = #{Tag.get_roots}, Folks = #{Tag.get_folksonomy}"
+      Debug.show(class:self.class,method:__method__,note:'4',vars:[['folks',Tag.get_folksonomy]])
     end
   end
 
@@ -155,7 +155,7 @@ class Tag
       if link
         ancestors = get_ancestors if dag
         tags.each do |tag|
-          puts "add_children 1: name=#{tag.name}, parent=#{name}"
+          Debug.show(class:self.class,method:__method__,note:'1',vars:[['name',tag.name],['parent',name]])
           ensure_dag(tag.get_descendents) if dag && ancestors.include?(tag)
           tag.add_parents([self])
           tag.register_child
@@ -168,7 +168,7 @@ class Tag
 
   def ensure_dag(descendents)
     # maintains directed acyclic graph by removing self from all descendents
-    puts "ensure_dag: self=#{self}, descendents=#{descendents}"
+    Debug.show(class:self.class,method:__method__,note:'1',vars:[['self',self],['descendents',descendents]])
     (parents & descendents).each {|parent| delete_parent(parent)}
   end
 
