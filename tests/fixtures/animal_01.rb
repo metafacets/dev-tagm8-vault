@@ -11,6 +11,5 @@ module AnimalTaxonomy
     Tag.add_tag(:carp, :food)
     Tag.add_tag(:carpette, :carp)
     Tag.delete_tag(:mammal)
-    puts "8. Tags = #{Tag.get_tags}"
   end
 end
