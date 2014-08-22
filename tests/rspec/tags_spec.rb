@@ -1,8 +1,9 @@
 require 'rspec'
-#require 'rspec-its'
 require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\tag.rb'
+require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\tests\fixtures\animal_01.rb'
 
 describe Tag do
+  include AnimalTaxonomy
   context ':animal > :mouse, :car' do
     before(:all) do
       Tag.empty
@@ -11,7 +12,9 @@ describe Tag do
       @animal = Tag.get_tag(:animal)
       @mouse = Tag.get_tag(:mouse)
       @car = Tag.get_tag(:car)
+      @taxonomy = Tag.get_tags
     end
+    it 'taxonomy has 3 tags' do expect(@taxonomy.size).to eq(3) end
     it 'car has no children' do expect(@car).to_not have_child end
     it 'car has no parents' do expect(@car).to_not have_parent end
     it 'car is folk' do expect(@car).to be_folk end
@@ -27,43 +30,25 @@ describe Tag do
   end
   context 'folksonomy' do
     before(:all) do
-      Tag.empty
-      Tag.add_tag(:mouse,:animal)
-      Tag.add_tags([:cat, :dog], :mammal)
-      Tag.add_tag(:animal, :life)
-      Tag.add_tag(:life, :dog)
-      Tag.add_tag(:mammal, :animal)
-      Tag.add_tags([:fish, :insect], :animal)
-      Tag.add_tags([:carp, :herring], :fish)
-      Tag.add_tag(:carp, :food)
-      Tag.add_tag(:carpette, :carp)
-      Tag.delete_tag(:mammal)
-      # set-up test data
+      instantiate_animal_taxonomy
       all_folks = Tag.get_tags.values.select {|tag| tag.folk?}
       @omitted_folks = (all_folks-Tag.get_folksonomy)
       @non_folks = (Tag.get_folksonomy-all_folks)
+      @taxonomy = Tag.get_tags
     end
+    it 'taxonomy has 11 tags' do expect(@taxonomy.size).to eq(11) end
     it 'includes all folks' do expect(@omitted_folks).to be_empty end
     it 'includes only folks' do expect(@non_folks).to be_empty end
   end
   context 'roots' do
     before(:all) do
-      Tag.empty
-      Tag.add_tag(:mouse,:animal)
-      Tag.add_tags([:cat, :dog], :mammal)
-      Tag.add_tag(:animal, :life)
-      Tag.add_tag(:life, :dog)
-      Tag.add_tag(:mammal, :animal)
-      Tag.add_tags([:fish, :insect], :animal)
-      Tag.add_tags([:carp, :herring], :fish)
-      Tag.add_tag(:carp, :food)
-      Tag.add_tag(:carpette, :carp)
-      Tag.delete_tag(:mammal)
-      # set-up test data
+      instantiate_animal_taxonomy
       all_roots = Tag.get_tags.values.select {|tag| tag.root?}
       @omitted_roots = (all_roots-Tag.get_roots)
       @non_roots = (Tag.get_roots-all_roots)
+      @taxonomy = Tag.get_tags
     end
+    it 'taxonomy has 11 tags' do expect(@taxonomy.size).to eq(11) end
     it 'includes all roots' do expect(@omitted_roots).to be_empty end
     it 'includes only roots' do expect(@non_roots).to be_empty end
   end
