@@ -1,32 +1,28 @@
 require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\debug.rb'
-require 'pp'
 require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\tag.rb'
 
+Debug.new(tags:[:test]) # comment out to turn off
+
 Tag.add_tag(:mouse,:animal)
-puts "1. Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
+Debug.show(note:1,tags:[:test],vars:[['tags',Tag.get_tags],['roots',Tag.get_roots],['folks',Tag.get_folksonomy]])
 Tag.add_tags([:cat, :dog], :mammal)
-#puts "2. Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
-#Tag.add_tag(:dog, :mammal)
-puts "3. Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
+Debug.show(note:2,tags:[:test],vars:[['tags',Tag.get_tags],['roots',Tag.get_roots],['folks',Tag.get_folksonomy]])
 Tag.add_tag(:animal, :life)
-puts "4. Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
+Debug.show(note:3,tags:[:test],vars:[['tags',Tag.get_tags],['roots',Tag.get_roots],['folks',Tag.get_folksonomy]])
 Tag.add_tag(:life, :dog)
-puts "5. Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
+Debug.show(note:4,tags:[:test],vars:[['tags',Tag.get_tags],['roots',Tag.get_roots],['folks',Tag.get_folksonomy]])
 Tag.add_tag(:mammal, :animal)
-puts "6. Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
+Debug.show(note:5,tags:[:test],vars:[['tags',Tag.get_tags],['roots',Tag.get_roots],['folks',Tag.get_folksonomy]])
 Tag.add_tags([:fish, :insect], :animal)
 Tag.add_tags([:carp, :herring], :fish)
 Tag.add_tag(:carp, :food)
 Tag.add_tag(:carpette, :carp)
-#Tag.add_tag(:herring, :fish)
-#Tag.add_tag(:insect, :animal)
-puts "7. Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
-puts "descendents= #{Tag.get_tag(:mouse).get_descendents}"
-puts "descendents= #{Tag.get_tag(:mammal).get_descendents}"
-puts "descendents= #{Tag.get_tag(:animal).get_descendents}"
-puts "ancestors= #{Tag.get_tag(:carpette).get_ancestors}"
-puts "depth= #{Tag.get_tag(:carpette).get_depth(Tag.get_tag(:fish),Tag.get_tag(:fish).get_descendents)}"
+Debug.show(note:6,tags:[:test],vars:[['tags',Tag.get_tags],['roots',Tag.get_roots],['folks',Tag.get_folksonomy]])
+Debug.show(tags:[:test],level:4,vars:[['descendents',Tag.get_tag(:mouse).get_descendents]])
+Debug.show(tags:[:test],level:4,vars:[['descendents',Tag.get_tag(:mammal).get_descendents]])
+Debug.show(tags:[:test],level:4,vars:[['descendents',Tag.get_tag(:animal).get_descendents]])
+Debug.show(tags:[:test],level:4,vars:[['ancestors',Tag.get_tag(:carpette).get_ancestors]])
+Debug.show(tags:[:test],level:4,vars:[['depth',Tag.get_tag(:carpette).get_depth(Tag.get_tag(:fish),Tag.get_tag(:fish).get_descendents)]])
 Tag.delete_tag(:mammal)
-puts "8. Tags = #{Tag.get_tags}", "Roots = #{Tag.get_roots}", "Folks = #{Tag.get_folksonomy}"
-puts "descendents= #{Tag.get_tag(:animal).get_descendents}"
-Debug.show(class:'Tag',method:'test',note:2,level:2,vars:[['descendents',Tag.get_tag(:animal).get_descendents]])
+Debug.show(note:7,tags:[:test],vars:[['tags',Tag.get_tags],['roots',Tag.get_roots],['folks',Tag.get_folksonomy]])
+Debug.show(tags:[:test],level:4,vars:[['descendents',Tag.get_tag(:animal).get_descendents]])
