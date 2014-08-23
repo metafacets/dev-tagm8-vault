@@ -1,4 +1,7 @@
+require 'singleton'
+
 class DebugItems < Hash
+  include Singleton
   def normalize!
     add_defaults!
     normalize_context!
