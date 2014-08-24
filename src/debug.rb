@@ -4,15 +4,15 @@ class DebugItems < Hash
   include Singleton
   def normalize!
     add_defaults!
-    normalize_context!
+    normalize_contexts!
     normalize_tags!
     normalize_vars!
-    normalize_level!
+    normalize_levels!
   end
   def add_defaults!
     {class:nil,method:nil,note:nil,vars:nil,level:nil,tags:nil}.each {|k,v| self[k] = v unless self.has_key?(k)}
   end
-  def normalize_context!
+  def normalize_contexts!
     [:class,:method,:note].each do |option|
 #      puts "DebugLine.normalize_context! 1: option=#{option}, value=#{self[option]}"
       self[option] = if self[option].kind_of?(Array)
@@ -45,19 +45,24 @@ class DebugItems < Hash
                   else []
                   end
   end
-  def normalize_level!
+  def normalize_levels!
     level = self[:level]
-#    puts "DebugLine.normalize_level! 1: level=#{level}"
-    level = level[0] if level.kind_of?(Array)
-    self[:level] = if level.nil?
+    normalize_level = lambda {|l|
+      if !l.is_a? Integer
+        begin
+          l = l.to_i
+        rescue
+          l = 0
+        end
+      end
+      l
+    }
+    self[:level] = if level.nil? || level == []
                      []
-                   elsif !level.is_a? Integer
-                     begin
-                       [level.to_i]
-                     rescue
-                       [0]
-                     end
-                   else [level]
+                   elsif level.is_a? Array
+                     level.map {|l| normalize_level.call(l)}
+                   else
+                     [normalize_level.call(level)]
                    end
   end
 end
