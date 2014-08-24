@@ -30,7 +30,10 @@ describe DebugItems do
     end
   end
   context :normalize_contexts! do
-    pairs = [[nil,[]],['val',['val']],[[],[]],[['val'],['val']]]
+    pairs = [[nil,[]]\
+            ,['val',['val']]\
+            ,[[],[]]\
+            ,[['val'],['val']]]
     [:class,:method,:note].each do |option|
       context option do
         pairs.each do |pair|
@@ -45,18 +48,32 @@ describe DebugItems do
     end
   end
   context :normalize_tags! do
-    pairs = [[nil,[]],['val',[:val]],[:val,[:val]],[[],[]],[['val1',:val2],[:val1,:val2]]]
+    pairs = [[nil,[]]\
+            ,['val',[:val]]\
+            ,[:val,[:val]]\
+            ,[[],[]]\
+            ,[['val1',:val2]\
+            ,[:val1,:val2]]\
+            ]
     pairs.each do |pair|
       d = DebugItems[{:tags=>pair[0]}]
       d.add_defaults!
       d.normalize_tags!
       expected = {:tags=>pair[1]}
-#          puts "in=#{pair[0]}, d=#{d},expected=#{expected}"
+#      puts "in=#{pair[0]}, d=#{d},expected=#{expected}"
       it "#{pair[0]} becomes #{pair[1]}" do expect(d).to include(expected) end
     end
   end
   context :normalize_vars! do
-    pairs = [[nil,[]],[[],[]],[['a'],[]],[['i','v'],[['i','v']]],[[['i1','v1'],['i2','v2']],[['i1','v1'],['i2','v2']]]]
+    pairs = [[nil,[]]\
+            ,[[],[]]\
+            ,[['a'],[]]\
+            ,[['i','v']\
+            ,[['i','v']]]\
+            ,[[['i1','v1']\
+            ,['i2','v2']]\
+            ,[['i1','v1'],['i2','v2']]]\
+            ]
     pairs.each do |pair|
       d = DebugItems[{:vars=>pair[0]}]
       d.add_defaults!
@@ -67,13 +84,24 @@ describe DebugItems do
     end
   end
   context :normalize_levels! do
-    pairs = [[nil,[]],[[],[]],[1,[1]],['1',[1]],['x',[0]],[[1],[1]],[['1'],[1]],[['x'],[0]],[[1,2],[1,2]],[[1,'2'],[1,2]],[[1,'x','2'],[1,0,2]]]
+    pairs = [[nil,[]]\
+            ,[[],[]]\
+            ,[1,[1]]\
+            ,['1',[1]]\
+            ,['x',[0]]\
+            ,[[1],[1]]\
+            ,[['1'],[1]]\
+            ,[['x'],[0]]\
+            ,[[1,2],[1,2]]\
+            ,[[1,'2'],[1,2]]\
+            ,[[1,'x','2'],[1,0,2]]\
+            ]
     pairs.each do |pair|
       d = DebugItems[{:level=>pair[0]}]
       d.add_defaults!
       d.normalize_levels!
       expected = {:level=>pair[1]}
-          puts "in=#{pair[0]}, d=#{d},expected=#{expected}"
+#      puts "in=#{pair[0]}, d=#{d},expected=#{expected}"
       it "#{pair[0]} becomes #{pair[1]}" do expect(d).to include(expected) end
     end
   end
