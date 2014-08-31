@@ -2,26 +2,25 @@ require 'singleton'
 
 class DebugItems < Hash
   include Singleton
-  def normalize!
+  def normalize!(is_output=false)
     add_defaults!
     normalize_contexts!
     normalize_tags!
-    normalize_vars!
+    is_output ? normalize_context!(:vars) : normalize_vars!
     normalize_levels!
   end
   def add_defaults!
     {class:nil,method:nil,note:nil,vars:nil,level:nil,tags:nil}.each {|k,v| self[k] = v unless self.has_key?(k)}
   end
-  def normalize_contexts!
-    [:class,:method,:note].each do |option|
-#      puts "DebugLine.normalize_context! 1: option=#{option}, value=#{self[option]}"
-      self[option] = if self[option].kind_of?(Array)
-                       self[option].each.map(&:to_s)
-                     elsif self[option].nil?
-                       []
-                     else [self[option].to_s]
-                     end
-    end
+  def normalize_contexts!; [:class,:method,:note].each {|context| normalize_context!(context)} end
+  def normalize_context!(context)
+#    puts "DebugLine.normalize_context! 1: context=#{context}, value=#{self[context]}"
+    self[context] = if self[context].kind_of?(Array)
+                  self[context].each.map(&:to_s)
+                elsif self[context].nil?
+                  []
+                else [self[context].to_s]
+                end
   end
   def normalize_tags!
     tags = self[:tags]
@@ -68,7 +67,9 @@ class DebugItems < Hash
 end
 
 class Debug
-  @@outputs = []
+  def self.empty; @@outputs = [] end
+  Debug.empty
+  def self.outputs; @@outputs end
   def self.show(debug_items={})
 #    puts "Debug.self.show 1: debug_line=#{debug_items}"
     items = DebugItems[debug_items]
@@ -76,35 +77,39 @@ class Debug
     items.normalize!
 #    puts "Debug.self.show 3: items=#{items}"
 #    puts "Debug.self.show 4: @@outputs=#{@@outputs}"
-    @@outputs.each {|output| output.process(items)}
+    Debug.outputs.each {|output| output.show(items) if output.include?(items)}
   end
   attr_accessor :class, :method, :note, :vars, :level, :tags
   def initialize(criteria={})
     crit = DebugItems[criteria]
-    crit.normalize!
+    crit.normalize!(true)
     DebugItems[crit].each {|k,v| instance_variable_set("@#{k}", v)}
     @@outputs |= [self]
 #    puts "Debug.new: @@outputs=#{@@outputs}"
   end
-  def process(items)
-    # shows items if items satisfy criteria
+  def include?(items)
+    # include if items satisfy criteria
     catch :done do
-      items.each do |k, v|
-#        puts "Debug.process 1: k=#{k}, v=#{v}"
+      items.each do |k, ov|
+        v = k == :vars ? ov.map {|i| i[0]} : ov.clone
+#        puts "Debug.include? 1: k=#{k}, v=#{v}"
         ivs = "@#{k}"
         if instance_variable_defined?(ivs)
           iv = instance_variable_get(ivs)
-#          puts "Debug.process 2: iv=#{iv}"
-#          puts "Debug.process 3: iv&v=#{iv&v}"
-          if !iv.empty? && (iv&v).empty?
-#            puts 'Debug.process 4: throwing done'
+#          puts "Debug.include? 2: iv=#{iv}"
+#          puts "Debug.include? 3: iv&v=#{iv&v}"
+#          puts "Debug.include? 4: (iv-v).empty?=#{(iv-v).empty?}"
+          if !iv.empty? && !(iv-v).empty?
+#            puts 'Debug.include? 5: throwing done'
             throw :done
           end
         end
       end
-#      puts "Debug.process 4: items=#{items}"
-      show(items)
+#      puts "Debug.include? 6a: true"
+      return true
     end
+#    puts "Debug.include? 6b: false"
+    false
   end
   def show(items)
 #    puts "Debug.show 1: items=#{items}"
