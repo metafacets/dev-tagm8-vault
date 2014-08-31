@@ -23,7 +23,7 @@ describe Debug do
           s = d.include?(item => set[1])
           e = set[2]
 #          puts "test: got=#{s}, expected=#{set[2]}"
-          it "#{set[0]} satisfies #{set[1]} is #{set[2].to_s}" do expect(s).to eq(e) end
+          it "#{set[1]} includes #{set[0]} is #{set[2].to_s}" do expect(s).to eq(e) end
         end
       end
     end
