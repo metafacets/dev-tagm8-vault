@@ -1,70 +1,4 @@
-require 'singleton'
-
-class DebugItems < Hash
-  include Singleton
-  def normalize!(is_output=false)
-    add_defaults!
-    normalize_contexts!
-    normalize_tags!
-    is_output ? normalize_context!(:vars) : normalize_vars!
-    normalize_levels!
-  end
-  def add_defaults!
-    {class:nil,method:nil,note:nil,vars:nil,level:nil,tags:nil}.each {|k,v| self[k] = v unless self.has_key?(k)}
-  end
-  def normalize_contexts!; [:class,:method,:note].each {|context| normalize_context!(context)} end
-  def normalize_context!(context)
-#    puts "DebugLine.normalize_context! 1: context=#{context}, value=#{self[context]}"
-    self[context] = if self[context].kind_of?(Array)
-                  self[context].each.map(&:to_s)
-                elsif self[context].nil?
-                  []
-                else [self[context].to_s]
-                end
-  end
-  def normalize_tags!
-    tags = self[:tags]
-#    puts "DebugLine.normalize_tags! 1: tags=#{tags} is array" if tags.is_a? Array
-    self[:tags] = if tags.is_a?(Array)
-#                      puts "DebugLine.normalize_tags! 2: tags=#{tags.map(&:to_sym)}"
-                      tags.map(&:to_sym)
-                  elsif tags.nil? then []
-                  else [tags.to_sym]
-                  end
-  end
-  def normalize_vars!
-#    puts "DebugLine.normalize_vars! 1: vars=#{self[:vars]}"
-    self[:vars] = if self[:vars].kind_of?(Array)
-                    if self[:vars][0].kind_of?(Array)
-                      self[:vars]
-                    elsif self[:vars].size == 2
-                      [self[:vars]]
-                    else []
-                    end
-                  else []
-                  end
-  end
-  def normalize_levels!
-    level = self[:level]
-    normalize_level = lambda {|l|
-      if !l.is_a? Integer
-        begin
-          l = l.to_i
-        rescue
-          l = 0
-        end
-      end
-      l
-    }
-    self[:level] = if level.nil? || level == []
-                     []
-                   elsif level.is_a? Array
-                     level.map {|l| normalize_level.call(l)}
-                   else
-                     [normalize_level.call(level)]
-                   end
-  end
-end
+require_relative 'debug_item.rb'
 
 class Debug
   def self.empty; @@outputs = [] end
@@ -72,7 +6,7 @@ class Debug
   def self.outputs; @@outputs end
   def self.show(debug_items={})
 #    puts "Debug.self.show 1: debug_line=#{debug_items}"
-    items = DebugItems[debug_items]
+    items = DebugItem[debug_items]
 #    puts "Debug.self.show 2: line=#{items}"
     items.normalize!
 #    puts "Debug.self.show 3: items=#{items}"
@@ -81,9 +15,9 @@ class Debug
   end
   attr_accessor :class, :method, :note, :vars, :level, :tags
   def initialize(criteria={})
-    crit = DebugItems[criteria]
+    crit = DebugItem[criteria]
     crit.normalize!(true)
-    DebugItems[crit].each {|k,v| instance_variable_set("@#{k}", v)}
+    DebugItem[crit].each {|k,v| instance_variable_set("@#{k}", v)}
     @@outputs |= [self]
 #    puts "Debug.new: @@outputs=#{@@outputs}"
   end
