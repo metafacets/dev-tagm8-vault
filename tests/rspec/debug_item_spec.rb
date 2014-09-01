@@ -68,16 +68,28 @@ describe DebugItem do
     pairs = [[nil,[]]\
             ,[[],[]]\
             ,[['a'],[]]\
-            ,[['i','v']\
-            ,[['i','v']]]\
-            ,[[['i1','v1']\
-            ,['i2','v2']]\
-            ,[['i1','v1'],['i2','v2']]]\
+            ,[['i','v'],[['i','v']]]\
+            ,[[['i1','v1'],['i2','v2']],[['i1','v1'],['i2','v2']]]\
             ]
     pairs.each do |pair|
       d = DebugItem[{:vars=>pair[0]}]
       d.add_defaults!
       d.normalize_vars!
+      expected = {:vars=>pair[1]}
+#          puts "in=#{pair[0]}, d=#{d},expected=#{expected}"
+      it "#{pair[0]} becomes #{pair[1]}" do expect(d).to include(expected) end
+    end
+  end
+  context ':normalize_vars! (for outputs)' do
+    pairs = [[nil,[]]\
+            ,[[],[]]\
+            ,[['i1'],['i1']]\
+            ,[['i1','i2'],['i1','i2']]\
+            ]
+    pairs.each do |pair|
+      d = DebugItem[{:vars=>pair[0]}]
+      d.add_defaults!
+      d.normalize_vars!(true)
       expected = {:vars=>pair[1]}
 #          puts "in=#{pair[0]}, d=#{d},expected=#{expected}"
       it "#{pair[0]} becomes #{pair[1]}" do expect(d).to include(expected) end

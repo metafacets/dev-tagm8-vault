@@ -6,7 +6,7 @@ class DebugItem < Hash
     add_defaults!
     normalize_contexts!
     normalize_tags!
-    is_output ? normalize_context!(:vars) : normalize_vars!
+    normalize_vars!(is_output)
     normalize_levels!
   end
   def add_defaults!
@@ -32,17 +32,21 @@ class DebugItem < Hash
                   else [tags.to_sym]
                   end
   end
-  def normalize_vars!
+  def normalize_vars!(is_output=false)
 #    puts "DebugLine.normalize_vars! 1: vars=#{self[:vars]}"
-    self[:vars] = if self[:vars].kind_of?(Array)
-                    if self[:vars][0].kind_of?(Array)
-                      self[:vars]
-                    elsif self[:vars].size == 2
-                      [self[:vars]]
+    if is_output
+      normalize_context!(:vars)
+    else
+      self[:vars] = if self[:vars].kind_of?(Array)
+                      if self[:vars][0].kind_of?(Array)
+                        self[:vars]
+                      elsif self[:vars].size == 2
+                        [self[:vars]]
+                      else []
+                      end
                     else []
                     end
-                  else []
-                  end
+    end
   end
   def normalize_levels!
     level = self[:level]
