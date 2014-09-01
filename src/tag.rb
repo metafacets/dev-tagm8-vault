@@ -161,7 +161,7 @@ class Tag
             if Tag.dag_prevent?
               ctags -= [tag]
             else
-              tag.ensure_dag(descendents+[self])
+              tag.ensure_dag(descendents+[self]) # +[self] to prevent reflection as well as looping
               add_link_children.call(tag)
             end
           else
@@ -175,22 +175,6 @@ class Tag
       end
       Debug.show(class:self.class,method:__method__,note:'4',vars:[['folks',Tag.get_folksonomy]])
     end
-#    if !tags.to_a.empty?
-#      if link
-#        descendents = get_descendents if dag
-#        tags.each do |tag|
-#          Debug.show(class:self.class,method:__method__,note:'1',vars:[['name',name],['parent',tag.name]])
-#          tag.ensure_dag(descendents) if dag && descendents.include?(tag)
-#          tag.add_children([self])
-#          Debug.show(class:self.class,method:__method__,note:'2',vars:[['self',tag]])
-#          tag.register_parent
-#          Debug.show(class:self.class,method:__method__,note:'3',vars:[['roots',Tag.get_roots],['folks',Tag.get_folksonomy]])
-#        end
-#      end
-#      @parents |= tags.to_a
-#      register_child if link
-#      Debug.show(class:self.class,method:__method__,note:'4',vars:[['folks',Tag.get_folksonomy]])
-#    end
   end
 
   def add_children(tags, link=false, dag=false, prevent=false)
@@ -210,7 +194,7 @@ class Tag
             if Tag.dag_prevent?
               ctags -= [tag]
             else
-              ensure_dag(tag.get_descendents+[tag])
+              ensure_dag(tag.get_descendents+[tag])# +[tag] to prevent reflection as well as looping
               add_link_parents.call(tag)
             end
           else
@@ -223,24 +207,11 @@ class Tag
         register_parent if link
       end
     end
-#    if !tags.to_a.empty?
-#      if link
-#        ancestors = get_ancestors if dag
-#        tags.each do |tag|
-#          Debug.show(class:self.class,method:__method__,note:'1',vars:[['name',tag.name],['parent',name]])
-#          ensure_dag(tag.get_descendents) if dag && ancestors.include?(tag)
-#          tag.add_parents([self])
-#          tag.register_child
-#        end
-#      end
-#      @children |= tags.to_a
-#      register_parent if link
-#    end
   end
 
   def ensure_dag(descendents)
-    # maintains directed acyclic graph by removing self from all descendents
-#    descendents |= [self]
+    # fixes existing tree to avoid would-be reflection and looping
+    # to maintain directed acyclic graph by removing self from all descendents
     Debug.show(class:self.class,method:__method__,note:'1',vars:[['self',self],['descendents',descendents]])
     (parents & descendents).each {|parent| delete_parent(parent)}
   end
