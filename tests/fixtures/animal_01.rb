@@ -1,6 +1,7 @@
 module AnimalTaxonomy
   def instantiate_animal_taxonomy
     Tag.empty
+    Tag.dag_fix
     Tag.add_tag(:mouse,:animal)
     Tag.add_tags([:cat, :dog], :mammal)
     Tag.add_tag(:animal, :life)

@@ -3,6 +3,7 @@ require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\tag.rb'
 
 Debug.new(tags:[:test]) # comment out to turn off
 
+Tag.dag_fix
 Tag.add_tag(:mouse,:animal)
 Debug.show(note:1,tags:[:test],vars:[['tags',Tag.get_tags],['roots',Tag.get_roots],['folks',Tag.get_folksonomy]])
 Tag.add_tags([:cat, :dog], :mammal)

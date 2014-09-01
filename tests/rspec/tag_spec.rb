@@ -59,4 +59,108 @@ describe Tag do
     methods.each {|method| it method do expect(subject).to respond_to(method) end }
     it ':name ok' do expect(subject.name).to eq(:my_tag) end
   end
+  context 'prevent recursion (:a <-> :a)' do
+    [:dag_fix,:dag_prevent].each do |context|
+      context context do
+        Tag.empty
+        Tag.send(context)
+        Tag.add_tag(:animal,:animal)
+        taxonomy = Tag.get_tags
+        animal = Tag.get_tag(:animal)
+        it 'taxonomy has 1 tag' do expect(taxonomy.size).to eq(1) end
+        it 'animal has no parents' do expect(animal).to_not have_parent end
+        it 'animal has no children' do expect(animal).to_not have_child end
+        it 'animal is not root' do expect(animal).to_not be_root end
+        it 'animal is folk' do expect(animal).to be_folk end
+      end
+    end
+  end
+  context 'prevent reflection (:a -> :b -> :a)' do
+    context :dag_fix do
+      Tag.empty
+      Tag.dag_fix
+      Tag.add_tag(:mammal,:animal)
+      Tag.add_tag(:animal,:mammal)
+      taxonomy = Tag.get_tags
+      roots = Tag.get_roots
+      folks = Tag.get_folksonomy
+      animal = Tag.get_tag(:animal)
+      mammal = Tag.get_tag(:mammal)
+      it 'taxonomy has 2 tags' do expect(taxonomy.size).to eq(2) end
+      it 'roots has 1 tag' do expect(roots.size).to eq(1) end
+      it 'folks is empty' do expect(folks.size).to eq(0) end
+      it 'mammal has no parent' do expect(mammal).to_not have_parent end
+      it 'mammal has child' do expect(mammal).to have_child end
+      it 'animal has parent' do expect(animal).to have_parent end
+      it 'animal has no children' do expect(animal).to_not have_child end
+      it 'mammal is root' do expect(mammal).to be_root end
+    end
+    context :dag_prevent do
+      Tag.empty
+      Tag.dag_prevent
+      Tag.add_tag(:mammal,:animal)
+      Tag.add_tag(:animal,:mammal)
+      taxonomy = Tag.get_tags
+      roots = Tag.get_roots
+      folks = Tag.get_folksonomy
+      animal = Tag.get_tag(:animal)
+      mammal = Tag.get_tag(:mammal)
+      it 'taxonomy has 2 tags' do expect(taxonomy.size).to eq(2) end
+      it 'roots has 1 tag' do expect(roots.size).to eq(1) end
+      it 'folks is empty' do expect(folks.size).to eq(0) end
+      it 'animal has no parent' do expect(animal).to_not have_parent end
+      it 'animal has child' do expect(animal).to have_child end
+      it 'mammal has parent' do expect(mammal).to have_parent end
+      it 'mammal has no children' do expect(mammal).to_not have_child end
+      it 'animal is root' do expect(animal).to be_root end
+    end
+  end
+  context 'prevent looping (:a -> :b -> :c -> :a)' do
+    context :dag_fix do
+      Tag.empty
+      Tag.dag_fix
+      Tag.add_tag(:mammal,:animal)
+      Tag.add_tag(:mouse,:mammal)
+      Tag.add_tag(:animal,:mouse)
+      taxonomy = Tag.get_tags
+      roots = Tag.get_roots
+      folks = Tag.get_folksonomy
+      animal = Tag.get_tag(:animal)
+      mammal = Tag.get_tag(:mammal)
+      mouse = Tag.get_tag(:mouse)
+      it 'taxonomy has 3 tags' do expect(taxonomy.size).to eq(3) end
+      it 'roots has 1 tag' do expect(roots.size).to eq(1) end
+      it 'folks is empty' do expect(folks.size).to eq(0) end
+      it 'mouse has no parent' do expect(mouse).to_not have_parent end
+      it 'mouse has child' do expect(mouse).to have_child end
+      it 'animal has parent' do expect(animal).to have_parent end
+      it 'animal has child' do expect(animal).to have_child end
+      it 'mammal has parent' do expect(mammal).to have_parent end
+      it 'mammal has no child' do expect(mammal).to_not have_child end
+      it 'mouse is root' do expect(mouse).to be_root end
+    end
+    context :dag_prevent do
+      Tag.empty
+      Tag.dag_prevent
+      Tag.add_tag(:mammal,:animal)
+      Tag.add_tag(:mouse,:mammal)
+      Tag.add_tag(:animal,:mouse)
+      taxonomy = Tag.get_tags
+      roots = Tag.get_roots
+      folks = Tag.get_folksonomy
+      animal = Tag.get_tag(:animal)
+      mammal = Tag.get_tag(:mammal)
+      mouse = Tag.get_tag(:mouse)
+      it 'taxonomy has 3 tags' do expect(taxonomy.size).to eq(3) end
+      it 'roots has 1 tag' do expect(roots.size).to eq(1) end
+      it 'folks is empty' do expect(folks.size).to eq(0) end
+      it 'animal has no parent' do expect(animal).to_not have_parent end
+      it 'animal has child' do expect(animal).to have_child end
+      it 'mammal has parent' do expect(mammal).to have_parent end
+      it 'mammal has child' do expect(mammal).to have_child end
+      it 'mouse has parent' do expect(mouse).to have_parent end
+      it 'mouse has no child' do expect(mouse).to_not have_child end
+      it 'animal is root' do expect(animal).to be_root end
+    end
+  end
 end
