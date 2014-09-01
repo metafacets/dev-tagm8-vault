@@ -59,7 +59,7 @@ describe Tag do
     methods.each {|method| it method do expect(subject).to respond_to(method) end }
     it ':name ok' do expect(subject.name).to eq(:my_tag) end
   end
-  context 'prevent recursion (:a <-> :a)' do
+  context 'prevent recursion (:a <-+-> :a)' do
     [:dag_fix,:dag_prevent].each do |context|
       context context do
         Tag.empty
@@ -75,8 +75,8 @@ describe Tag do
       end
     end
   end
-  context 'prevent reflection (:a -> :b -> :a)' do
-    context :dag_fix do
+  context 'prevent reflection (:a -> :b -+-> :a)' do
+    context ':dag_fix (:a -x-> :b -> :a)' do
       Tag.empty
       Tag.dag_fix
       Tag.add_tag(:mammal,:animal)
@@ -95,7 +95,7 @@ describe Tag do
       it 'animal has no children' do expect(animal).to_not have_child end
       it 'mammal is root' do expect(mammal).to be_root end
     end
-    context :dag_prevent do
+    context ':dag_prevent (:a -> :b -x-> :a)' do
       Tag.empty
       Tag.dag_prevent
       Tag.add_tag(:mammal,:animal)
@@ -115,8 +115,8 @@ describe Tag do
       it 'animal is root' do expect(animal).to be_root end
     end
   end
-  context 'prevent looping (:a -> :b -> :c -> :a)' do
-    context :dag_fix do
+  context 'prevent looping (:a -> :b -> :c -+-> :a)' do
+    context ':dag_fix (:a -x-> :b -> :c -> :a)' do
       Tag.empty
       Tag.dag_fix
       Tag.add_tag(:mammal,:animal)
@@ -139,7 +139,7 @@ describe Tag do
       it 'mammal has no child' do expect(mammal).to_not have_child end
       it 'mouse is root' do expect(mouse).to be_root end
     end
-    context :dag_prevent do
+    context ':dag_prevent (:a -> :b -> :c -x-> :a)' do
       Tag.empty
       Tag.dag_prevent
       Tag.add_tag(:mammal,:animal)
