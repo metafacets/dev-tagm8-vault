@@ -47,7 +47,9 @@ class Tag
         parent.delete_child(tag)
       end
       children.each {|child| child.delete_parent(tag)}
-      @@tags.delete(name)
+      Tag.get_tags.delete(name)
+      Tag.get_roots.delete(tag)
+      Tag.get_folksonomy.delete(tag)
     end
   end
 
@@ -133,12 +135,13 @@ class Tag
   end
 
   def delete_parent(tag)
+    # exploits delete_child to:
+    # - remove bi-directional link between self and tag (parent)
+    # - update taxonomy roots or folksonomy
     Debug.show(class:self.class,method:__method__,note:'1',vars:[['self',self],['tag',tag]])
     if has_parent?(tag)
-      @parents.delete(tag)
-      Debug.show(class:self.class,method:__method__,note:'2',vars:[['self',self]])
       tag.delete_child(self)
-      Debug.show(class:self.class,method:__method__,note:'3',vars:[['self',self],['tag',tag]])
+      Debug.show(class:self.class,method:__method__,note:'2',vars:[['self',self],['tag',tag]])
     end
   end
 
@@ -233,13 +236,16 @@ class Tag
   end
 
   def delete_child(tag)
+    # removes bi-directional link between self and tag (child)
+    # updates taxonomy roots or folksonomy (exploited by :delete_parent)
     if has_child?(tag)
-      @children.delete(tag)
+      children.delete(tag)
       if !has_child? && Tag.has_root?(self)
         Tag.delete_root(self)
         Tag.add_folksonomy(self)
       end
-      if !tag.has_parent?
+      tag.parents.delete(self)
+      unless tag.has_parent?
         if tag.has_child?
           Tag.add_root(tag)
         else
