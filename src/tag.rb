@@ -26,13 +26,13 @@ class Tag
 
   def self.tags; @@tags end
 
-  def self.get_tag(name) @@tags[name] end
+  def self.get_tag(name) Tag.tags[name] end
 
   def self.has_tag?(name=nil)
     if name.nil?
-      !@@tags.empty?
+      !Tag.tags.empty?
     else
-      @@tags.has_key?(name)
+      Tag.tags.has_key?(name)
     end
   end
 
@@ -72,47 +72,47 @@ class Tag
   end
 
   def self.subtract_tags(tags)
-    tags.each {|tag| @@tags.delete(tag.name.to_sym)}
+    tags.each {|tag| Tag.tags.delete(tag.name.to_sym)}
   end
 
   def self.roots; @@roots end
 
   def self.has_root?(tag=nil)
     if tag.nil?
-      !@@roots.empty?
+      !Tag.roots.empty?
     else
-      @@roots.include?(tag)
+      Tag.roots.include?(tag)
     end
   end
 
-  def self.delete_root(tag) @@roots.delete(tag) end
+  def self.delete_root(tag) Tag.roots.delete(tag) end
 
-  def self.add_root(tag) @@roots |= [tag] end
+  def self.add_root(tag) Tag.roots |= [tag] end
 
-  def self.subtract_roots(tags) @@roots -= tags.to_a end
+  def self.subtract_roots(tags) Tag.roots -= tags.to_a end
 
   def self.folksonomy; @@folksonomy end
 
   def self.has_folksonomy?(tag=nil)
     if tag.nil?
-      !@@folksonomy.empty?
+      !Tag.folksonomy.empty?
     else
-      @@folksonomy.include?(tag)
+      Tag.folksonomy.include?(tag)
     end
   end
 
-  def self.delete_folksonomy(tag) @@folksonomy.delete(tag) end
+  def self.delete_folksonomy(tag) Tag.folksonomy.delete(tag) end
 
-  def self.add_folksonomy(tag) @@folksonomy |= [tag] end
+  def self.add_folksonomy(tag) Tag.folksonomy |= [tag] end
 
-  def self.subtract_folksonomy(tags) @@folksonomy -= tags.to_a end
+  def self.subtract_folksonomy(tags) Tag.folksonomy -= tags.to_a end
 
   def initialize(name)
     @name = name
     @parents = []
     @children = []
     @items = []     # to be supported
-    @@tags[name] = self
+    Tag.tags[name] = self
     Tag.add_folksonomy(self)
   end
 
@@ -299,7 +299,7 @@ class Tag
     # delete self and its descendents
     delete_descendents
     parent.delete_child(self)
-    @@tags.delete(name)
+    Tag.tags.delete(name)
   end
 
   def add_branch(tag)
