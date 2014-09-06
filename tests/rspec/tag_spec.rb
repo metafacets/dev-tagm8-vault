@@ -322,6 +322,180 @@ describe Tag do
         end
       end
     end
+    describe 'Tag.delete_tag' do
+      describe 'c -> (b) -> a => c -> a' do
+        describe 'before' do
+          Tag.empty
+          Tag.add_tag(:c,:b)
+          Tag.add_tag(:b,:a)
+          c = Tag.get_tag(:c)
+          b = Tag.get_tag(:b)
+          a = Tag.get_tag(:a)
+          roots = Tag.roots
+          folks = Tag.folksonomy
+          it ':a has child' do expect(a).to have_child end
+          it ':b has parent' do expect(b).to have_parent end
+          it ':b has child' do expect(b).to have_child end
+          it ':c has parent' do expect(c).to have_parent end
+          it 'has 1 roots' do expect(roots.size).to eq(1) end
+          it ':a is root' do expect(a).to be_root end
+          it 'has no folks' do expect(folks).to be_empty end
+        end
+        describe 'after' do
+          Tag.empty
+          Tag.add_tag(:c,:b)
+          Tag.add_tag(:b,:a)
+          c = Tag.get_tag(:c)
+          a = Tag.get_tag(:a)
+          Tag.delete_tag(:b)
+          tags = Tag.tags
+          roots = Tag.roots
+          folks = Tag.folksonomy
+          it 'tag :b not included' do expect(tags).to_not have_key(:b) end
+          it ':a has child' do expect(a).to have_child end
+          it ':c has parent' do expect(c).to have_parent end
+          it 'has 1 roots' do expect(roots.size).to eq(1) end
+          it ':a is root' do expect(a).to be_root end
+          it 'has no folks' do expect(folks).to be_empty end
+        end
+      end
+      describe 'c -> (b) -> [a1,a2] => c -> [a1,a2]' do
+        describe 'before' do
+          Tag.empty
+          Tag.add_tag(:c,:b)
+          Tag.add_tag(:b,:a1)
+          Tag.add_tag(:b,:a2)
+          c = Tag.get_tag(:c)
+          b = Tag.get_tag(:b)
+          a1 = Tag.get_tag(:a1)
+          a2 = Tag.get_tag(:a2)
+          roots = Tag.roots
+          folks = Tag.folksonomy
+          it ':a1 has child' do expect(a1).to have_child end
+          it ':a2 has child' do expect(a2).to have_child end
+          it ':b has parent' do expect(b).to have_parent end
+          it ':b has child' do expect(b).to have_child end
+          it ':c has parent' do expect(c).to have_parent end
+          it 'has 2 roots' do expect(roots.size).to eq(2) end
+          it ':a1 is root' do expect(a1).to be_root end
+          it ':a2 is root' do expect(a2).to be_root end
+          it 'has no folks' do expect(folks).to be_empty end
+        end
+        describe 'after' do
+          Tag.empty
+          Tag.add_tag(:c,:b)
+          Tag.add_tag(:b,:a1)
+          Tag.add_tag(:b,:a2)
+          c = Tag.get_tag(:c)
+          a1 = Tag.get_tag(:a1)
+          a2 = Tag.get_tag(:a2)
+          Tag.delete_tag(:b)
+          tags = Tag.tags
+          roots = Tag.roots
+          folks = Tag.folksonomy
+          it 'tag :b not included' do expect(tags).to_not have_key(:b) end
+          it ':a1 has child' do expect(a1).to have_child end
+          it ':a2 has child' do expect(a2).to have_child end
+          it ':c has parent' do expect(c).to have_parent end
+          it 'has 2 roots' do expect(roots.size).to eq(2) end
+          it ':a1 is root' do expect(a1).to be_root end
+          it ':a2 is root' do expect(a2).to be_root end
+          it 'has no folks' do expect(folks).to be_empty end
+        end
+      end
+      describe '[c1,c2] -> (b) -> a => [c1,c2] -> a' do
+        describe 'before' do
+          Tag.empty
+          Tag.add_tag(:c1,:b)
+          Tag.add_tag(:c2,:b)
+          Tag.add_tag(:b,:a)
+          c1 = Tag.get_tag(:c1)
+          c2 = Tag.get_tag(:c2)
+          b = Tag.get_tag(:b)
+          a = Tag.get_tag(:a)
+          roots = Tag.roots
+          folks = Tag.folksonomy
+          it ':a has child' do expect(a).to have_child end
+          it ':b has parent' do expect(b).to have_parent end
+          it ':b has child' do expect(b).to have_child end
+          it ':c1 has parent' do expect(c1).to have_parent end
+          it ':c2 has parent' do expect(c2).to have_parent end
+          it 'has 1 root' do expect(roots.size).to eq(1) end
+          it ':a is root' do expect(a).to be_root end
+          it 'has no folks' do expect(folks).to be_empty end
+        end
+        describe 'after' do
+          Tag.empty
+          Tag.add_tag(:c1,:b)
+          Tag.add_tag(:c2,:b)
+          Tag.add_tag(:b,:a)
+          c1 = Tag.get_tag(:c1)
+          c2 = Tag.get_tag(:c2)
+          a = Tag.get_tag(:a)
+          Tag.delete_tag(:b)
+          tags = Tag.tags
+          roots = Tag.roots
+          folks = Tag.folksonomy
+          it 'tag :b not included' do expect(tags).to_not have_key(:b) end
+          it ':a has child' do expect(a).to have_child end
+          it ':c1 has parent' do expect(c1).to have_parent end
+          it ':c2 has parent' do expect(c2).to have_parent end
+          it 'has 1 root' do expect(roots.size).to eq(1) end
+          it ':a is root' do expect(a).to be_root end
+          it 'has no folks' do expect(folks).to be_empty end
+        end
+      end
+      describe '[c1,c2] -> (b) -> [a1,a2] => [c1,c2] -> [a1,a2]' do
+        describe 'before' do
+          Tag.empty
+          Tag.add_tag(:c1,:b)
+          Tag.add_tag(:c2,:b)
+          Tag.add_tag(:b,:a1)
+          Tag.add_tag(:b,:a2)
+          c1 = Tag.get_tag(:c1)
+          c2 = Tag.get_tag(:c2)
+          b = Tag.get_tag(:b)
+          a1 = Tag.get_tag(:a1)
+          a2 = Tag.get_tag(:a2)
+          roots = Tag.roots
+          folks = Tag.folksonomy
+          it ':a1 has child' do expect(a1).to have_child end
+          it ':a2 has child' do expect(a2).to have_child end
+          it ':b has parent' do expect(b).to have_parent end
+          it ':b has child' do expect(b).to have_child end
+          it ':c1 has parent' do expect(c1).to have_parent end
+          it ':c2 has parent' do expect(c2).to have_parent end
+          it 'has 2 root2' do expect(roots.size).to eq(2) end
+          it ':a1 is root' do expect(a1).to be_root end
+          it ':a2 is root' do expect(a2).to be_root end
+          it 'has no folks' do expect(folks).to be_empty end
+        end
+        describe 'after' do
+          Tag.empty
+          Tag.add_tag(:c1,:b)
+          Tag.add_tag(:c2,:b)
+          Tag.add_tag(:b,:a1)
+          Tag.add_tag(:b,:a2)
+          c1 = Tag.get_tag(:c1)
+          c2 = Tag.get_tag(:c2)
+          a1 = Tag.get_tag(:a1)
+          a2 = Tag.get_tag(:a2)
+          Tag.delete_tag(:b)
+          tags = Tag.tags
+          roots = Tag.roots
+          folks = Tag.folksonomy
+          it 'tag :b not included' do expect(tags).to_not have_key(:b) end
+          it ':a1 has child' do expect(a1).to have_child end
+          it ':a2 has child' do expect(a2).to have_child end
+          it ':c1 has parent' do expect(c1).to have_parent end
+          it ':c2 has parent' do expect(c2).to have_parent end
+          it 'has 2 root2' do expect(roots.size).to eq(2) end
+          it ':a1 is root' do expect(a1).to be_root end
+          it ':a2 is root' do expect(a2).to be_root end
+          it 'has no folks' do expect(folks).to be_empty end
+        end
+      end
+    end
   end
   context 'dag integrity' do
     context 'prevent recursion (:a <-+-> :a)' do

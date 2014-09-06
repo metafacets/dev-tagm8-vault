@@ -39,6 +39,18 @@ class Tag
   def self.delete_tag(name)
     # deletes tag by name joining its children to its parents
     if Tag.has_tag?(name)
+#      tag = Tag.get_tag(name)
+#      parents = tag.parents.dup
+#      children = tag.children.dup
+#      parents.each do |parent|
+#        parent.add_children(children) if children
+#        parent.delete_child(tag)
+#      end
+#      children.each do |child|
+#        child.add_parents(parents) if parents
+#        child.delete_parent(tag)
+#      end
+#      Tag.tags.delete(name)
       tag = Tag.get_tag(name)
       parents = tag.parents.dup
       children = tag.children.dup
