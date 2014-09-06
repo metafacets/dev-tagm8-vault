@@ -24,7 +24,7 @@ class Tag
 
   def self.dag_prevent?; @@dag_prevent end
 
-  def self.get_tags; @@tags end
+  def self.tags; @@tags end
 
   def self.get_tag(name) @@tags[name] end
 
@@ -47,9 +47,9 @@ class Tag
         parent.delete_child(tag)
       end
       children.each {|child| child.delete_parent(tag)}
-      Tag.get_tags.delete(name)
-      Tag.get_roots.delete(tag)
-      Tag.get_folksonomy.delete(tag)
+      Tag.tags.delete(name)
+      Tag.roots.delete(tag)
+      Tag.folksonomy.delete(tag)
     end
   end
 
@@ -75,7 +75,7 @@ class Tag
     tags.each {|tag| @@tags.delete(tag.name.to_sym)}
   end
 
-  def self.get_roots; @@roots end
+  def self.roots; @@roots end
 
   def self.has_root?(tag=nil)
     if tag.nil?
@@ -91,7 +91,7 @@ class Tag
 
   def self.subtract_roots(tags) @@roots -= tags.to_a end
 
-  def self.get_folksonomy; @@folksonomy end
+  def self.folksonomy; @@folksonomy end
 
   def self.has_folksonomy?(tag=nil)
     if tag.nil?
@@ -151,7 +151,7 @@ class Tag
       tag.add_children([self])
       Debug.show(class:self.class,method:__method__,note:'2',vars:[['self',tag]])
       tag.register_parent
-      Debug.show(class:self.class,method:__method__,note:'3',vars:[['roots',Tag.get_roots],['folks',Tag.get_folksonomy]])
+      Debug.show(class:self.class,method:__method__,note:'3',vars:[['roots',Tag.roots],['folks',Tag.folksonomy]])
     }
     tags -= [self] if dag # eliminate recursive tags
     ctags = tags.clone
@@ -176,7 +176,7 @@ class Tag
         @parents |= ctags.to_a
         register_child if link
       end
-      Debug.show(class:self.class,method:__method__,note:'4',vars:[['folks',Tag.get_folksonomy]])
+      Debug.show(class:self.class,method:__method__,note:'4',vars:[['folks',Tag.folksonomy]])
     end
   end
 

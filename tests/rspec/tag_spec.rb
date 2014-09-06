@@ -12,7 +12,7 @@ describe Tag do
       @animal = Tag.get_tag(:animal)
       @mouse = Tag.get_tag(:mouse)
       @car = Tag.get_tag(:car)
-      @taxonomy = Tag.get_tags
+      @taxonomy = Tag.tags
     end
     it 'taxonomy has 3 tags' do expect(@taxonomy.size).to eq(3) end
     it 'car has no children' do expect(@car).to_not have_child end
@@ -31,10 +31,10 @@ describe Tag do
   context 'folksonomy' do
     before(:all) do
       instantiate_animal_taxonomy
-      all_folks = Tag.get_tags.values.select {|tag| tag.folk?}
-      @omitted_folks = (all_folks-Tag.get_folksonomy)
-      @non_folks = (Tag.get_folksonomy-all_folks)
-      @taxonomy = Tag.get_tags
+      all_folks = Tag.tags.values.select {|tag| tag.folk?}
+      @omitted_folks = (all_folks-Tag.folksonomy)
+      @non_folks = (Tag.folksonomy-all_folks)
+      @taxonomy = Tag.tags
     end
     it 'taxonomy has 11 tags' do expect(@taxonomy.size).to eq(11) end
     it 'includes all folks' do expect(@omitted_folks).to be_empty end
@@ -43,10 +43,10 @@ describe Tag do
   context 'roots' do
     before(:all) do
       instantiate_animal_taxonomy
-      all_roots = Tag.get_tags.values.select {|tag| tag.root?}
-      @omitted_roots = (all_roots-Tag.get_roots)
-      @non_roots = (Tag.get_roots-all_roots)
-      @taxonomy = Tag.get_tags
+      all_roots = Tag.tags.values.select {|tag| tag.root?}
+      @omitted_roots = (all_roots-Tag.roots)
+      @non_roots = (Tag.roots-all_roots)
+      @taxonomy = Tag.tags
     end
     it 'taxonomy has 11 tags' do expect(@taxonomy.size).to eq(11) end
     it 'includes all roots' do expect(@omitted_roots).to be_empty end
@@ -77,8 +77,8 @@ describe Tag do
           a = Tag.get_tag(:a)
           b = Tag.get_tag(:b)
           a.delete_child(b)
-          roots = Tag.get_roots
-          folks = Tag.get_folksonomy
+          roots = Tag.roots
+          folks = Tag.folksonomy
           it ':a has no child' do expect(a).to_not have_child end
           it ':b has no parent' do expect(b).to_not have_parent end
           it 'has no roots' do expect(roots).to be_empty end
@@ -90,8 +90,8 @@ describe Tag do
           a = Tag.get_tag(:a)
           b = Tag.get_tag(:b)
           b.delete_parent(a)
-          roots = Tag.get_roots
-          folks = Tag.get_folksonomy
+          roots = Tag.roots
+          folks = Tag.folksonomy
           it ':a has no child' do expect(a).to_not have_child end
           it ':b has no parent' do expect(b).to_not have_parent end
           it 'has no roots' do expect(roots).to be_empty end
@@ -106,8 +106,8 @@ describe Tag do
           a = Tag.get_tag(:a)
           b = Tag.get_tag(:b)
           r = Tag.get_tag(:r)
-          roots = Tag.get_roots
-          folks = Tag.get_folksonomy
+          roots = Tag.roots
+          folks = Tag.folksonomy
           it ':r has child' do expect(r).to have_child end
           it ':a has child' do expect(a).to have_child end
           it ':a has parent' do expect(a).to have_parent end
@@ -124,8 +124,8 @@ describe Tag do
           b = Tag.get_tag(:b)
           r = Tag.get_tag(:r)
           a.delete_child(b)
-          roots = Tag.get_roots
-          folks = Tag.get_folksonomy
+          roots = Tag.roots
+          folks = Tag.folksonomy
           it ':r has child' do expect(r).to have_child end
           it ':a has parent' do expect(a).to have_parent end
           it ':a has no child' do expect(a).to_not have_child end
@@ -143,8 +143,8 @@ describe Tag do
           b = Tag.get_tag(:b)
           r = Tag.get_tag(:r)
           b.delete_parent(a)
-          roots = Tag.get_roots
-          folks = Tag.get_folksonomy
+          roots = Tag.roots
+          folks = Tag.folksonomy
           it ':r has child' do expect(r).to have_child end
           it ':a has parent' do expect(a).to have_parent end
           it ':a has no child' do expect(a).to_not have_child end
@@ -163,8 +163,8 @@ describe Tag do
           a = Tag.get_tag(:a)
           b = Tag.get_tag(:b)
           l = Tag.get_tag(:l)
-          roots = Tag.get_roots
-          folks = Tag.get_folksonomy
+          roots = Tag.roots
+          folks = Tag.folksonomy
           it ':a has child' do expect(a).to have_child end
           it ':b has parent' do expect(b).to have_parent end
           it ':b has child' do expect(b).to have_child end
@@ -181,8 +181,8 @@ describe Tag do
           b = Tag.get_tag(:b)
           l = Tag.get_tag(:l)
           a.delete_child(b)
-          roots = Tag.get_roots
-          folks = Tag.get_folksonomy
+          roots = Tag.roots
+          folks = Tag.folksonomy
           it ':a has no child' do expect(a).to_not have_child end
           it ':b has no parent' do expect(b).to_not have_parent end
           it ':b has child' do expect(b).to have_child end
@@ -200,8 +200,8 @@ describe Tag do
           b = Tag.get_tag(:b)
           l = Tag.get_tag(:l)
           b.delete_parent(a)
-          roots = Tag.get_roots
-          folks = Tag.get_folksonomy
+          roots = Tag.roots
+          folks = Tag.folksonomy
           it ':a has no child' do expect(a).to_not have_child end
           it ':b has no parent' do expect(b).to_not have_parent end
           it ':b has child' do expect(b).to have_child end
@@ -220,8 +220,8 @@ describe Tag do
           a1 = Tag.get_tag(:a1)
           a2 = Tag.get_tag(:a2)
           b = Tag.get_tag(:b)
-          roots = Tag.get_roots
-          folks = Tag.get_folksonomy
+          roots = Tag.roots
+          folks = Tag.folksonomy
           it ':a1 has child' do expect(a1).to have_child end
           it ':a2 has child' do expect(a2).to have_child end
           it ':b has parent' do expect(b).to have_parent end
@@ -238,8 +238,8 @@ describe Tag do
           a2 = Tag.get_tag(:a2)
           b = Tag.get_tag(:b)
           a2.delete_child(b)
-          roots = Tag.get_roots
-          folks = Tag.get_folksonomy
+          roots = Tag.roots
+          folks = Tag.folksonomy
           it ':a1 has child' do expect(a1).to have_child end
           it ':a2 has no child' do expect(a2).to_not have_child end
           it ':b has parent' do expect(b).to have_parent end
@@ -256,8 +256,8 @@ describe Tag do
           a2 = Tag.get_tag(:a2)
           b = Tag.get_tag(:b)
           b.delete_parent(a2)
-          roots = Tag.get_roots
-          folks = Tag.get_folksonomy
+          roots = Tag.roots
+          folks = Tag.folksonomy
           it ':a1 has child' do expect(a1).to have_child end
           it ':a2 has no child' do expect(a2).to_not have_child end
           it ':b has parent' do expect(b).to have_parent end
@@ -275,8 +275,8 @@ describe Tag do
           b1 = Tag.get_tag(:b1)
           b2 = Tag.get_tag(:b2)
           a = Tag.get_tag(:a)
-          roots = Tag.get_roots
-          folks = Tag.get_folksonomy
+          roots = Tag.roots
+          folks = Tag.folksonomy
           it ':a has child' do expect(a).to have_child end
           it ':b1 has parent' do expect(b1).to have_parent end
           it ':b2 has parent' do expect(b2).to have_parent end
@@ -292,8 +292,8 @@ describe Tag do
           b2 = Tag.get_tag(:b2)
           a = Tag.get_tag(:a)
           a.delete_child(b2)
-          roots = Tag.get_roots
-          folks = Tag.get_folksonomy
+          roots = Tag.roots
+          folks = Tag.folksonomy
           it ':a has child' do expect(a).to have_child end
           it ':b1 has parent' do expect(b1).to have_parent end
           it ':b2 has no parent' do expect(b2).to_not have_parent end
@@ -310,8 +310,8 @@ describe Tag do
           b2 = Tag.get_tag(:b2)
           a = Tag.get_tag(:a)
           b2.delete_parent(a)
-          roots = Tag.get_roots
-          folks = Tag.get_folksonomy
+          roots = Tag.roots
+          folks = Tag.folksonomy
           it ':a has child' do expect(a).to have_child end
           it ':b1 has parent' do expect(b1).to have_parent end
           it ':b2 has no parent' do expect(b2).to_not have_parent end
@@ -330,7 +330,7 @@ describe Tag do
           Tag.empty
           Tag.send(context)
           Tag.add_tag(:animal,:animal)
-          taxonomy = Tag.get_tags
+          taxonomy = Tag.tags
           animal = Tag.get_tag(:animal)
           it 'taxonomy has 1 tag' do expect(taxonomy.size).to eq(1) end
           it 'animal has no parents' do expect(animal).to_not have_parent end
@@ -346,9 +346,9 @@ describe Tag do
         Tag.dag_fix
         Tag.add_tag(:mammal,:animal)
         Tag.add_tag(:animal,:mammal)
-        taxonomy = Tag.get_tags
-        roots = Tag.get_roots
-        folks = Tag.get_folksonomy
+        taxonomy = Tag.tags
+        roots = Tag.roots
+        folks = Tag.folksonomy
         animal = Tag.get_tag(:animal)
         mammal = Tag.get_tag(:mammal)
         it 'taxonomy has 2 tags' do expect(taxonomy.size).to eq(2) end
@@ -365,9 +365,9 @@ describe Tag do
         Tag.dag_prevent
         Tag.add_tag(:mammal,:animal)
         Tag.add_tag(:animal,:mammal)
-        taxonomy = Tag.get_tags
-        roots = Tag.get_roots
-        folks = Tag.get_folksonomy
+        taxonomy = Tag.tags
+        roots = Tag.roots
+        folks = Tag.folksonomy
         animal = Tag.get_tag(:animal)
         mammal = Tag.get_tag(:mammal)
         it 'taxonomy has 2 tags' do expect(taxonomy.size).to eq(2) end
@@ -387,9 +387,9 @@ describe Tag do
         Tag.add_tag(:mammal,:animal)
         Tag.add_tag(:mouse,:mammal)
         Tag.add_tag(:animal,:mouse)
-        taxonomy = Tag.get_tags
-        roots = Tag.get_roots
-        folks = Tag.get_folksonomy
+        taxonomy = Tag.tags
+        roots = Tag.roots
+        folks = Tag.folksonomy
         animal = Tag.get_tag(:animal)
         mammal = Tag.get_tag(:mammal)
         mouse = Tag.get_tag(:mouse)
@@ -410,9 +410,9 @@ describe Tag do
         Tag.add_tag(:mammal,:animal)
         Tag.add_tag(:mouse,:mammal)
         Tag.add_tag(:animal,:mouse)
-        taxonomy = Tag.get_tags
-        roots = Tag.get_roots
-        folks = Tag.get_folksonomy
+        taxonomy = Tag.tags
+        roots = Tag.roots
+        folks = Tag.folksonomy
         animal = Tag.get_tag(:animal)
         mammal = Tag.get_tag(:mammal)
         mouse = Tag.get_tag(:mouse)
