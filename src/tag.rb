@@ -255,19 +255,14 @@ class Tag
     # if self is root add tag as new root else add tag as sibling of self
   end
 
-  def pp_parents
-    a_p = []
-    parents.each {|parent| a_p += [parent.name] }
-    '['+a_p.join(', ')+']'
+  def inspect
+    pretty_print = lambda {|method|
+      a_p = []
+      send(method).each {|tag| a_p += [tag.name] }
+      '['+a_p.join(', ')+']'
+    }
+    "Tag<name=#{name}, parents=#{pretty_print.call(:parents)}, children=#{pretty_print.call(:children)}>"
   end
-
-  def pp_children
-    a_p = []
-    children.each {|child| a_p += [child.name] }
-    '['+a_p.join(', ')+']'
-  end
-
-  def inspect; "Tag<name=#{name}, parents=#{pp_parents}, children=#{pp_children}>" end
   def to_s; inspect end
 
   # methods added for rspec readability
