@@ -660,4 +660,74 @@ describe Tag do
       end
     end
   end
+  describe :instantiate do
+    describe '[:a]' do
+      Tag.empty
+      Tag.dag_prevent
+      Tag.instantiate('[:a]')
+      a = Tag.get_tag(:a)
+      taxonomy = Tag.tags
+      roots = Tag.roots
+      folks = Tag.folksonomy
+      it 'taxonomy has 1 tag' do expect(taxonomy.size).to eq(1) end
+      it 'has no roots' do expect(roots.size).to eq(0) end
+      it 'has 1 folk' do expect(folks.size).to eq(1) end
+      it ':a is folk' do expect(a).to be_folk end
+    end
+    describe '[:a,:b]' do
+      Tag.empty
+      Tag.dag_prevent
+      Tag.instantiate('[:a,:b]')
+      a = Tag.get_tag(:a)
+      b = Tag.get_tag(:b)
+      taxonomy = Tag.tags
+      roots = Tag.roots
+      folks = Tag.folksonomy
+      it 'taxonomy has 2 tags' do expect(taxonomy.size).to eq(2) end
+      it 'has no roots' do expect(roots.size).to eq(0) end
+      it 'has 2 folks' do expect(folks.size).to eq(2) end
+      it ':a is folk' do expect(a).to be_folk end
+      it ':b is folk' do expect(b).to be_folk end
+    end
+    describe "[':a>:b']" do
+      Tag.empty
+      Tag.dag_prevent
+      Tag.instantiate('[:a>:b]')
+      a = Tag.get_tag(:a)
+      b = Tag.get_tag(:b)
+      taxonomy = Tag.tags
+      roots = Tag.roots
+      folks = Tag.folksonomy
+      it 'taxonomy has 2 tags' do expect(taxonomy.size).to eq(2) end
+      it 'has 1 root' do expect(roots.size).to eq(1) end
+      it 'has no folks' do expect(folks.size).to eq(0) end
+      it ':a is root' do expect(a).to be_root end
+      it ':a has no parent' do expect(a).to_not have_parent end
+      it ':a has child' do expect(a).to have_child end
+      it ':b has parent' do expect(b).to have_parent end
+      it ':b has no child' do expect(b).to_not have_child end
+    end
+    describe '[[:a,:b]>:c]' do
+      Tag.empty
+      Tag.dag_prevent
+      Tag.instantiate('[[:a,:b]>:c]')
+      a = Tag.get_tag(:a)
+      b = Tag.get_tag(:b)
+      c = Tag.get_tag(:c)
+      taxonomy = Tag.tags
+      roots = Tag.roots
+      folks = Tag.folksonomy
+      it 'taxonomy has 3 tags' do expect(taxonomy.size).to eq(3) end
+      it 'has 2 roots' do expect(roots.size).to eq(2) end
+      it 'has no folks' do expect(folks.size).to eq(0) end
+      it ':a is root' do expect(a).to be_root end
+      it ':b is root' do expect(b).to be_root end
+      it ':a has no parent' do expect(a).to_not have_parent end
+      it ':a has child' do expect(a).to have_child end
+      it ':b has no parent' do expect(b).to_not have_parent end
+      it ':b has child' do expect(b).to have_child end
+      it ':c has parent' do expect(c).to have_parent end
+      it ':c has no child' do expect(c).to_not have_child end
+    end
+  end
 end

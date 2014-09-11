@@ -61,6 +61,50 @@ class Tag
     end
   end
 
+  def self.instantiate(tag_ddl)
+    tag_ddl[">"] = ",'>'," if tag_ddl.include?('>')
+    tag_ddl = '['+tag_ddl+']' unless /^\[.*\]$/.match(tag_ddl)
+    Tag.instantiate1(eval(tag_ddl))
+  end
+
+  def self.instantiate1(tags)
+    puts "instantiate 1: tags=#{tags}"
+    do_status = lambda {|stack|
+      puts "do_status 1: stack=#{stack}"
+      new = []
+      stack.each {|i| new |= i}
+      Tag.update_status(new)
+    }
+    stack = []
+    link = false
+    tags.reverse.each do |tag|
+      puts "instantiate 2: tag=#{tag}, tag.class=#{tag.class}, stack=#{stack}"
+      if tag.is_a? Array
+        stack << Tag.instantiate1(tag)
+      elsif tag == '>'
+        link = true
+      elsif tag.is_a? String
+        stack << [Tag.get_lazy_tag(tag.to_sym)]
+      elsif tag.is_a? Symbol
+        stack << [Tag.get_lazy_tag(tag)]
+      end
+      puts "instantiate 3: tag=#{tag}, stack=#{stack}"
+      if link && tag != '>' && stack.size > 1
+        parents = stack.pop
+        children = stack.pop
+        Tag.link(children,parents)
+        link = false
+        do_status.call(stack) unless stack.empty?
+        stack = [parents]
+      end
+    end
+    do_status.call(stack)
+    results = []
+    stack.each {|i| results |= i}
+    puts "instantiate 4: results=#{results}"
+    results
+  end
+
   def self.add_tags(names_children, name_parent=nil)
     children = names_children.map {|name| Tag.get_lazy_tag(name)}.uniq
     Tag.link(children,[Tag.get_lazy_tag(name_parent)]) unless name_parent.nil?
