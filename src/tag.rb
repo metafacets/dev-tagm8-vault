@@ -62,9 +62,25 @@ class Tag
   end
 
   def self.instantiate(tag_ddl)
-    tag_ddl[">"] = ",'>'," if tag_ddl.include?('>')
-    tag_ddl = '['+tag_ddl+']' unless /^\[.*\]$/.match(tag_ddl)
-    Tag.instantiate1(eval(tag_ddl))
+    if tag_ddl.is_a? String
+      puts "instantiate 1: tag_ddl=#{tag_ddl}"
+      ['>','<'].each {|op| tag_ddl = tag_ddl.gsub(op,",'#{op}',")}
+#      tag_ddl[">"] = ",'>'," if tag_ddl.include?('>')
+#      tag_ddl["<"] = ",'<'," if tag_ddl.include?('<')
+      tag_ddl = '['+tag_ddl+']' unless /^\[.*\]$/.match(tag_ddl)
+      begin
+        tag_ddl = eval(tag_ddl)
+      rescue SyntaxError
+        tag_ddl = eval('['+tag_ddl+']')
+      end
+      puts "instantiate 2: tag_ddl=#{tag_ddl}"
+      begin
+        # copy Taxonomy
+        Tag.instantiate1(tag_ddl)
+      rescue
+        # restore Taxonomy copy
+      end
+    end
   end
 
   def self.instantiate1(tags)
@@ -81,21 +97,21 @@ class Tag
       puts "instantiate 2: tag=#{tag}, tag.class=#{tag.class}, stack=#{stack}"
       if tag.is_a? Array
         stack << Tag.instantiate1(tag)
-      elsif tag == '>'
-        link = true
+      elsif tag == '>' || tag == '<'
+        link = tag
       elsif tag.is_a? String
         stack << [Tag.get_lazy_tag(tag.to_sym)]
       elsif tag.is_a? Symbol
         stack << [Tag.get_lazy_tag(tag)]
       end
       puts "instantiate 3: tag=#{tag}, stack=#{stack}"
-      if link && tag != '>' && stack.size > 1
-        parents = stack.pop
-        children = stack.pop
-        Tag.link(children,parents)
+      if link && tag != '>' &&tag != '<' && stack.size > 1
+        first = stack.pop
+        second = stack.pop
+        link == '>' ? Tag.link(second,first) : Tag.link(first,second)
         link = false
         do_status.call(stack) unless stack.empty?
-        stack = [parents]
+        stack << first
       end
     end
     do_status.call(stack)

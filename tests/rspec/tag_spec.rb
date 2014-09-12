@@ -661,6 +661,21 @@ describe Tag do
     end
   end
   describe :instantiate do
+    describe 'tag_ddl errors' do
+      [[:a],:a].each do |ddl|
+        describe ddl do
+          Tag.empty
+          Tag.dag_prevent
+          Tag.instantiate(ddl)
+          taxonomy = Tag.tags
+          roots = Tag.roots
+          folks = Tag.folksonomy
+          it 'taxonomy empty' do expect(taxonomy.size).to eq(0) end
+          it 'roots empty' do expect(roots.size).to eq(0) end
+          it 'folk empty' do expect(folks.size).to eq(0) end
+        end
+      end
+    end
     ['[:a]',':a'].each do |ddl|
       describe ddl do
         Tag.empty
@@ -693,7 +708,7 @@ describe Tag do
         it ':b is folk' do expect(b).to be_folk end
       end
     end
-    ['[:a>:b]',':a>:b'].each do |ddl|
+    ['[:a>:b]',':a>:b','[:b<:a]',':b<:a'].each do |ddl|
       describe ddl do
         Tag.empty
         Tag.dag_prevent
@@ -713,7 +728,7 @@ describe Tag do
         it ':b has no child' do expect(b).to_not have_child end
       end
     end
-    ['[[:a,:b]>:c]','[:a,:b]>:c'].each do |ddl|
+    ['[[:a,:b]>:c]','[:a,:b]>:c','[:c<[:a,:b]]',':c<[:a,:b]'].each do |ddl|
       describe ddl do
         Tag.empty
         Tag.dag_prevent
@@ -735,6 +750,109 @@ describe Tag do
         it ':b has child' do expect(b).to have_child end
         it ':c has parent' do expect(c).to have_parent end
         it ':c has no child' do expect(c).to_not have_child end
+      end
+    end
+    ['[:a>[:b,:c]]',':a>[:b,:c]','[[:b,:c]<:a]','[:b,:c]<:a'].each do |ddl|
+      describe ddl do
+        Tag.empty
+        Tag.dag_prevent
+        Tag.instantiate(ddl)
+        a = Tag.get_tag(:a)
+        b = Tag.get_tag(:b)
+        c = Tag.get_tag(:c)
+        taxonomy = Tag.tags
+        roots = Tag.roots
+        folks = Tag.folksonomy
+        it 'taxonomy has 3 tags' do expect(taxonomy.size).to eq(3) end
+        it 'has 1 roots' do expect(roots.size).to eq(1) end
+        it 'has no folks' do expect(folks.size).to eq(0) end
+        it ':a is root' do expect(a).to be_root end
+        it ':a has no parent' do expect(a).to_not have_parent end
+        it ':a has child' do expect(a).to have_child end
+        it ':b has parent' do expect(b).to have_parent end
+        it ':b has no child' do expect(b).to_not have_child end
+        it ':c has parent' do expect(c).to have_parent end
+        it ':c has no child' do expect(c).to_not have_child end
+      end
+    end
+    ['[[:a1,:a2]>[:b1,:b2]]','[:a1,:a2]>[:b1,:b2]','[[:b1,:b2]<[:a1,:a2]]','[:b1,:b2]<[:a1,:a2]'].each do |ddl|
+      describe ddl do
+        Tag.empty
+        Tag.dag_prevent
+        Tag.instantiate(ddl)
+        a1 = Tag.get_tag(:a1)
+        a2 = Tag.get_tag(:a2)
+        b1 = Tag.get_tag(:b1)
+        b2 = Tag.get_tag(:b2)
+        taxonomy = Tag.tags
+        roots = Tag.roots
+        folks = Tag.folksonomy
+        it 'taxonomy has 4 tags' do expect(taxonomy.size).to eq(4) end
+        it 'has 2 roots' do expect(roots.size).to eq(2) end
+        it 'has no folks' do expect(folks.size).to eq(0) end
+        it ':a1 is root' do expect(a1).to be_root end
+        it ':a2 is root' do expect(a2).to be_root end
+        it ':a1 has no parent' do expect(a1).to_not have_parent end
+        it ':a1 has child' do expect(a1).to have_child end
+        it ':a2 has no parent' do expect(a2).to_not have_parent end
+        it ':a2 has child' do expect(a2).to have_child end
+        it ':b1 has parent' do expect(b1).to have_parent end
+        it ':b1 has no child' do expect(b1).to_not have_child end
+        it ':b2 has parent' do expect(b2).to have_parent end
+        it ':b2 has no child' do expect(b2).to_not have_child end
+      end
+    end
+    ['[:a>:b>:c]',':a>:b>:c','[:c<:b<:a]',':c<:b<:a'].each do |ddl|
+      describe ddl do
+        Tag.empty
+        Tag.dag_prevent
+        Tag.instantiate(ddl)
+        a = Tag.get_tag(:a)
+        b = Tag.get_tag(:b)
+        c = Tag.get_tag(:c)
+        taxonomy = Tag.tags
+        roots = Tag.roots
+        folks = Tag.folksonomy
+        it 'taxonomy has 3 tags' do expect(taxonomy.size).to eq(3) end
+        it 'has 1 root' do expect(roots.size).to eq(1) end
+        it 'has no folks' do expect(folks.size).to eq(0) end
+        it ':a is root' do expect(a).to be_root end
+        it ':a has no parent' do expect(a).to_not have_parent end
+        it ':a has child' do expect(a).to have_child end
+        it ':b has parent' do expect(b).to have_parent end
+        it ':b has child' do expect(b).to have_child end
+        it ':c has parent' do expect(c).to have_parent end
+        it ':c has no child' do expect(c).to_not have_child end
+      end
+    end
+    ['[[:a1,:a2]>:b>[:c1,:c2]]','[:a1,:a2]>:b>[:c1,:c2]','[[:c1,:c2]<:b<[:a1,:a2]]','[:c1,:c2]<:b<[:a1,:a2]'].each do |ddl|
+      describe ddl do
+        Tag.empty
+        Tag.dag_prevent
+        Tag.instantiate(ddl)
+        a1 = Tag.get_tag(:a1)
+        a2 = Tag.get_tag(:a2)
+        b = Tag.get_tag(:b)
+        c1 = Tag.get_tag(:c1)
+        c2 = Tag.get_tag(:c2)
+        taxonomy = Tag.tags
+        roots = Tag.roots
+        folks = Tag.folksonomy
+        it 'taxonomy has 5 tags' do expect(taxonomy.size).to eq(5) end
+        it 'has 2 roots' do expect(roots.size).to eq(2) end
+        it 'has no folks' do expect(folks.size).to eq(0) end
+        it ':a1 is root' do expect(a1).to be_root end
+        it ':a2 is root' do expect(a2).to be_root end
+        it ':a1 has no parent' do expect(a1).to_not have_parent end
+        it ':a1 has child' do expect(a1).to have_child end
+        it ':a2 has no parent' do expect(a2).to_not have_parent end
+        it ':a2 has child' do expect(a2).to have_child end
+        it ':b has parent' do expect(b).to have_parent end
+        it ':b has child' do expect(b).to have_child end
+        it ':c1 has parent' do expect(c1).to have_parent end
+        it ':c1 has no child' do expect(c1).to_not have_child end
+        it ':c2 has parent' do expect(c2).to have_parent end
+        it ':c2 has no child' do expect(c2).to_not have_child end
       end
     end
   end
