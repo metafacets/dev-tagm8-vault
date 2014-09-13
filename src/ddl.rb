@@ -1,8 +1,8 @@
 class Ddl
   def self.raw_ddl=(raw_ddl)
-    puts "raw_ddl 1: raw_ddl=#{raw_ddl}, raw_ddl.class=#{raw_ddl.class}"
+    Debug.show(class:self.class,method:__method__,note:'1',vars:[['raw_ddl',raw_ddl],['raw_ddl.class',raw_ddl.class]])
     raw_ddl = '' unless raw_ddl.is_a? String
-    puts "raw_ddl 2: raw_ddl=#{raw_ddl}, raw_ddl.class=#{raw_ddl.class}"
+    Debug.show(class:self.class,method:__method__,note:'2',vars:[['raw_ddl',raw_ddl],['raw_ddl.class',raw_ddl.class]])
     @@raw_ddl = raw_ddl
   end
   def self.raw_ddl; @@raw_ddl end
@@ -34,15 +34,15 @@ class Ddl
     end
   end
   def self.abstract(tag_ddl)
-    puts "abstract 1: ddl=#{tag_ddl}, tags=#{self.tags}"
+    Debug.show(class:self.class,method:__method__,note:'1',vars:[['tag_ddl',tag_ddl],['self.tags',self.tags]])
     or_tags = lambda {|stack|
-      puts "do_status 1: stack=#{stack}"
+      Debug.show(class:self.class,method:__method__,note:'1',vars:[['stack',stack]])
       stack.each {|i| self.tags |= i}
     }
     stack = []
     link = false
     tag_ddl.reverse.each do |tag|
-      puts "abstract 2: tag=#{tag}, tag.class=#{tag.class}, stack=#{stack}"
+      Debug.show(class:self.class,method:__method__,note:'2',vars:[['tag',tag],['tag.class',tag.class],['stack',stack]])
       if tag.is_a? Array
         stack << self.abstract(tag)
       elsif tag == '>' || tag == '<'
@@ -52,7 +52,7 @@ class Ddl
       elsif tag.is_a? Symbol
         stack << [tag]
       end
-      puts "abstract 3: tag=#{tag}, stack=#{stack}"
+      Debug.show(class:self.class,method:__method__,note:'3',vars:[['tag',tag],['stack',stack]])
       if link && tag != '>' &&tag != '<' && stack.size > 1
         or_tags.call(stack) unless stack.empty?
         first = stack.pop
@@ -65,17 +65,18 @@ class Ddl
     or_tags.call(stack)
     results = []
     stack.each {|i| results |= i}
-    puts "abstract 4: results=#{results}"
+    Debug.show(class:self.class,method:__method__,note:'4',vars:[['results',results]])
     results
   end
   def self.pre_process
     tag_ddl = self.raw_ddl.dup
-    puts "instantiate 1: tag_ddl=#{tag_ddl}, tag_ddl.class=#{tag_ddl.class}"
+    Debug.show(class:self.class,method:__method__,note:'1',vars:[['tag_ddl',tag_ddl],['tag_ddl.class',tag_ddl.class]])
     ':_,><'.each_char {|op| tag_ddl = eval("tag_ddl.gsub(/#{op}+/,op)")}  # filter obvious duplicates
     ['<>','><'].each {|op| tag_ddl = tag_ddl.gsub(op,op[0])}              # conflicting ops pick first
     '><'.each_char {|op| tag_ddl = tag_ddl.gsub(op,",'#{op}',")}          # separate ops into array els
     tag_ddl = tag_ddl.gsub('-','_')                                       # convert - to _
     tag_ddl = tag_ddl.gsub(/(\w)(:\w)/,'\1,\2')                           # missing commas
+    Debug.show(class:self.class,method:__method__,note:'2',vars:[['tag_ddl',tag_ddl],['tag_ddl.class',tag_ddl.class]])
     self.pre_ddl = tag_ddl
   end
   def self.fix_errors
@@ -83,13 +84,13 @@ class Ddl
     er = nil
     tag_ddl = self.pre_ddl.dup
     until ok do
-      puts "instantiate 2: tag_ddl=#{tag_ddl}"
+      Debug.show(class:self.class,method:__method__,note:'2',vars:[['tag_ddl',tag_ddl]])
       begin
         self.ddl = eval(tag_ddl)
-        self.ddl = [ddl] unless ddl.is_a? Array                    # guarantee array missed by SyntaxError
+        self.ddl = [ddl] unless ddl.is_a? Array                           # guarantee array missed by SyntaxError
         ok = true
       rescue SyntaxError
-        puts "instantiate 2a: Syntax error"
+        Debug.show(class:self.class,method:__method__,note:'SyntaxError')
         if er == 'SyntaxError'
           tag_ddl = '[]'
         else
@@ -97,7 +98,7 @@ class Ddl
           er = 'SyntaxError'
         end
       rescue NameError
-        puts "instantiate 2a: Name error"
+        Debug.show(class:self.class,method:__method__,note:'NameError')
         if er == 'NameError'
           tag_ddl = '[]'
         else
@@ -107,6 +108,6 @@ class Ddl
         end
       end
     end
-    puts "instantiate 3: ddl=#{self.ddl}"
+    Debug.show(class:self.class,method:__method__,note:'2',vars:[['self.ddl',self.ddl]])
   end
 end
