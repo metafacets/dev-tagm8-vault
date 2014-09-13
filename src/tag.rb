@@ -1,4 +1,5 @@
 require_relative 'debug.rb'
+require_relative 'ddl.rb'
 #Debug.new(class:'Tag',method:'ensure_dag') # comment out to turn off
 class Tag
   def self.empty?; !Tag.has_tag? && !Tag.has_root? && !Tag.has_folksonomy? end
@@ -62,86 +63,15 @@ class Tag
   end
 
   def self.instantiate(tag_ddl)
-    if tag_ddl.is_a? String
-      puts "instantiate 1: tag_ddl=#{tag_ddl}"
-      ':_,><'.each_char {|op| tag_ddl = eval("tag_ddl.gsub(/#{op}+/,op)")}  # filter obvious duplicates
-      ['<>','><'].each {|op| tag_ddl = tag_ddl.gsub(op,op[0])}              # conflicting ops pick first
-      '><'.each_char {|op| tag_ddl = tag_ddl.gsub(op,",'#{op}',")}          # separate ops into array els
-      tag_ddl = tag_ddl.gsub('-','_')                                       # convert - to _
-      tag_ddl = tag_ddl.gsub(/(\w)(:\w)/,'\1,\2')                           # missing commas
-      ok = false
-      er = nil
-      until ok do
-        puts "instantiate 2: tag_ddl=#{tag_ddl}"
-        begin
-          tag_ddl = eval(tag_ddl)
-          tag_ddl = [tag_ddl] unless tag_ddl.is_a? Array                    # guarantee array missed by SyntaxError
-          ok = true
-        rescue SyntaxError
-          puts "instantiate 2a: Syntax error"
-          if er == 'SyntaxError'
-            tag_ddl = '[]'
-          else
-            tag_ddl = "[#{tag_ddl}]"                                        # make array
-            er = 'SyntaxError'
-          end
-        rescue NameError
-          puts "instantiate 2a: Name error"
-          if er == 'NameError'
-            tag_ddl = '[]'
-          else
-            tag_ddl = tag_ddl.gsub(/(\w+)/i, ':\1')                         # form symbols
-            tag_ddl = tag_ddl.gsub(/:+/,':')
-            er = 'NameError'
-          end
-        end
+    Ddl.parse(tag_ddl)
+    tags = Ddl.tags.map {|name| Tag.get_lazy_tag(name)}
+    Ddl.links.each do |pair|
+      [0,1].each do |i|
+        pair[i] = pair[i].map {|name| Tag.get_lazy_tag(name)}
       end
-      puts "instantiate 3: tag_ddl=#{tag_ddl}"
-      begin
-        # copy Taxonomy
-        Tag.instantiate1(tag_ddl)
-      rescue
-        # restore Taxonomy copy
-      end
+      Tag.link(pair[0],pair[1])
     end
-  end
-
-  def self.instantiate1(tags)
-    puts "instantiate 1: tags=#{tags}"
-    do_status = lambda {|stack|
-      puts "do_status 1: stack=#{stack}"
-      new = []
-      stack.each {|i| new |= i}
-      Tag.update_status(new)
-    }
-    stack = []
-    link = false
-    tags.reverse.each do |tag|
-      puts "instantiate 2: tag=#{tag}, tag.class=#{tag.class}, stack=#{stack}"
-      if tag.is_a? Array
-        stack << Tag.instantiate1(tag)
-      elsif tag == '>' || tag == '<'
-        link = tag
-      elsif tag.is_a? String
-        stack << [Tag.get_lazy_tag(tag.to_sym)]
-      elsif tag.is_a? Symbol
-        stack << [Tag.get_lazy_tag(tag)]
-      end
-      puts "instantiate 3: tag=#{tag}, stack=#{stack}"
-      if link && tag != '>' &&tag != '<' && stack.size > 1
-        first = stack.pop
-        second = stack.pop
-        link == '>' ? Tag.link(second,first) : Tag.link(first,second)
-        link = false
-        do_status.call(stack) unless stack.empty?
-        stack << first
-      end
-    end
-    do_status.call(stack)
-    results = []
-    stack.each {|i| results |= i}
-    puts "instantiate 4: results=#{results}"
-    results
+    Tag.update_status(tags)
   end
 
   def self.add_tags(names_children, name_parent=nil)
