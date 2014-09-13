@@ -694,7 +694,7 @@ describe Tag do
       end
     end
     describe 'discrete pair' do
-      ['[:a,:b]',':a,:b','a,b',':a:b','::a,,b'].each do |ddl|
+      ['[:a,:b]',':a,:b'].each do |ddl|
         describe ddl do
           Tag.empty
           Tag.dag_prevent
@@ -713,7 +713,7 @@ describe Tag do
       end
     end
     describe 'discrete pair errors' do
-      ['a,b',':a:b',':a::b',':a,,:b','a::b'].each do |ddl|
+      ['a,b',':a:b',':a::b',':a,,:b','a::b','::a,,b'].each do |ddl|
         describe ddl do
           Tag.empty
           Tag.dag_prevent
@@ -750,6 +750,39 @@ describe Tag do
           it ':a has child' do expect(a).to have_child end
           it ':b has parent' do expect(b).to have_parent end
           it ':b has no child' do expect(b).to_not have_child end
+        end
+      end
+    end
+    describe 'hierarchy pair errors' do
+      ['[:a>b]','a>b','a>::b','[:b<<:a]',':b<<::a'].each do |ddl|
+        describe ddl do
+          Tag.empty
+          Tag.dag_prevent
+          Tag.instantiate(ddl)
+          a = Tag.get_tag(:a)
+          b = Tag.get_tag(:b)
+          taxonomy = Tag.tags
+          roots = Tag.roots
+          folks = Tag.folksonomy
+          it 'taxonomy has 2 tags' do expect(taxonomy.size).to eq(2) end
+          it 'has 1 root' do expect(roots.size).to eq(1) end
+          it 'has no folks' do expect(folks.size).to eq(0) end
+          it ':a is root' do expect(a).to be_root end
+          it ':a has no parent' do expect(a).to_not have_parent end
+          it ':a has child' do expect(a).to have_child end
+          it ':b has parent' do expect(b).to have_parent end
+          it ':b has no child' do expect(b).to_not have_child end
+        end
+      end
+    end
+    describe 'various syntax failures' do
+      [':b<><<:a'].each do |ddl|
+        describe ddl do
+          Tag.empty
+          Tag.dag_prevent
+          Tag.instantiate(ddl)
+          taxonomy = Tag.tags
+          it 'taxonomy empty' do expect(taxonomy.size).to eq(0) end
         end
       end
     end

@@ -64,32 +64,36 @@ class Tag
   def self.instantiate(tag_ddl)
     if tag_ddl.is_a? String
       puts "instantiate 1: tag_ddl=#{tag_ddl}"
-      ['>','<'].each {|op| tag_ddl = tag_ddl.gsub(op,",'#{op}',")}  # separate ops into array els
-      tag_ddl = tag_ddl.gsub('-','_')                               # convert - to _
-      tag_ddl = tag_ddl.gsub(/:+/,':')                              # filter obvious duplicates
-      tag_ddl = tag_ddl.gsub(/_+/,'_')
-      tag_ddl = tag_ddl.gsub(/,+/,',')
-      tag_ddl = tag_ddl.gsub(/>+/,'>')
-      tag_ddl = tag_ddl.gsub(/<+/,'<')
-      tag_ddl = tag_ddl.gsub(/(\w)(:\w)/,'\1,\2')                   # missing commas
-      tag_ddl = '['+tag_ddl+']' unless /^\[.*\]$/.match(tag_ddl)    # express within array
+      ':_,><'.each_char {|op| tag_ddl = eval("tag_ddl.gsub(/#{op}+/,op)")}  # filter obvious duplicates
+      ['<>','><'].each {|op| tag_ddl = tag_ddl.gsub(op,op[0])}              # conflicting ops pick first
+      '><'.each_char {|op| tag_ddl = tag_ddl.gsub(op,",'#{op}',")}          # separate ops into array els
+      tag_ddl = tag_ddl.gsub('-','_')                                       # convert - to _
+      tag_ddl = tag_ddl.gsub(/(\w)(:\w)/,'\1,\2')                           # missing commas
       ok = false
       er = nil
       until ok do
         puts "instantiate 2: tag_ddl=#{tag_ddl}"
         begin
           tag_ddl = eval(tag_ddl)
+          tag_ddl = [tag_ddl] unless tag_ddl.is_a? Array                    # guarantee array missed by SyntaxError
           ok = true
         rescue SyntaxError
           puts "instantiate 2a: Syntax error"
-          tag_ddl = '['+tag_ddl+']' unless er == 'SyntaxError'
-          er = 'SyntaxError'
-#          abort("#{tag_ddl}")
+          if er == 'SyntaxError'
+            tag_ddl = '[]'
+          else
+            tag_ddl = "[#{tag_ddl}]"                                        # make array
+            er = 'SyntaxError'
+          end
         rescue NameError
           puts "instantiate 2a: Name error"
-          tag_ddl = tag_ddl.gsub(/(\w+)/i, ':\1') unless er == 'NameError'
-          tag_ddl = tag_ddl.gsub(/:+/,':')
-          er = 'NameError'
+          if er == 'NameError'
+            tag_ddl = '[]'
+          else
+            tag_ddl = tag_ddl.gsub(/(\w+)/i, ':\1')                         # form symbols
+            tag_ddl = tag_ddl.gsub(/:+/,':')
+            er = 'NameError'
+          end
         end
       end
       puts "instantiate 3: tag_ddl=#{tag_ddl}"
