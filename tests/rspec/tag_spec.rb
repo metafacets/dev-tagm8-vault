@@ -30,7 +30,7 @@ describe Tag do
   end
   context 'folksonomy' do
     before(:all) do
-      instantiate_animal_taxonomy
+      animal_taxonomy
       all_folks = Tag.tags.values.select {|tag| tag.folk?}
       @omitted_folks = (all_folks-Tag.folksonomy)
       @non_folks = (Tag.folksonomy-all_folks)
@@ -42,7 +42,7 @@ describe Tag do
   end
   context 'roots' do
     before(:all) do
-      instantiate_animal_taxonomy
+      animal_taxonomy
       all_roots = Tag.tags.values.select {|tag| tag.root?}
       @omitted_roots = (all_roots-Tag.roots)
       @non_roots = (Tag.roots-all_roots)
@@ -953,5 +953,22 @@ describe Tag do
         end
       end
     end
+#    describe 'animal_taxonomy' do
+#      [true,false].each do |instantiate|
+#        describe "instantiate=#{instantiate}" do
+#          animal_taxonomy
+#          taxonomy = Tag.tags
+#          roots = Tag.roots
+#          folks = Tag.folksonomy
+#          animal = Tag.get_tag(:animal)
+#          food = Tag.get_tag(:food)
+#          it 'taxonomy has 6 tags' do expect(taxonomy.size).to eq(6) end
+#          it 'has 2 roots' do expect(roots.size).to eq(2) end
+#          it 'has no folks' do expect(folks.size).to eq(0) end
+#          it ':animal is root' do expect(animal).to be_root end
+#          it ':food is root' do expect(food).to be_root end
+#        end
+#      end
+#    end
   end
 end
