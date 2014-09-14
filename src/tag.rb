@@ -57,8 +57,10 @@ class Tag
       tag = Tag.get_tag(name)
       parents = tag.parents.dup
       children = tag.children.dup
-      Tag.tags.delete(name)
-      Tag.update_status(parents|children|[tag])
+      Tag.subtract_tags([tag])
+      Tag.subtract_roots([tag])
+      Tag.subtract_folksonomy([tag])
+      Tag.update_status(parents|children)
     end
   end
 
@@ -69,7 +71,7 @@ class Tag
       [0,1].each do |i|
         pair[i] = pair[i].map {|name| Tag.get_lazy_tag(name)}
       end
-      Tag.link(pair[0],pair[1])
+      Tag.link(pair[0],pair[1],false)
     end
     Tag.update_status(tags)
   end
@@ -106,9 +108,7 @@ class Tag
     end
   end
 
-  def self.delete_root(tag) Tag.roots.delete(tag) end
-
-  def self.add_root(tag) Tag.roots |= [tag] end
+  def self.add_roots(tags) Tag.roots |= tags.to_a end
 
   def self.subtract_roots(tags) Tag.roots -= tags.to_a end
 
@@ -122,31 +122,29 @@ class Tag
     end
   end
 
-  def self.delete_folksonomy(tag) Tag.folksonomy.delete(tag) end
-
-  def self.add_folksonomy(tag) Tag.folksonomy |= [tag] end
+  def self.add_folksonomy(tags) Tag.folksonomy |= tags.to_a end
 
   def self.subtract_folksonomy(tags) Tag.folksonomy -= tags.to_a end
 
   def self.update_status(tags)
     this_status = lambda {|tag|
       if tag.has_parent?
-        Tag.delete_root(tag) if Tag.has_root?(tag)
-        Tag.delete_folksonomy(tag) if Tag.has_folksonomy?(tag)
+        Tag.subtract_roots([tag])
+        Tag.subtract_folksonomy([tag])
       else
         if tag.has_child?
-          Tag.add_root(tag)
-          Tag.delete_folksonomy(tag) if Tag.has_folksonomy?(tag)
+          Tag.add_roots([tag])
+          Tag.subtract_folksonomy([tag])
         else
-          Tag.add_folksonomy(tag)
-          Tag.delete_root(tag) if Tag.has_root?(tag)
+          Tag.add_folksonomy([tag])
+          Tag.subtract_roots([tag])
         end
       end
     }
     tags.each {|tag| this_status.call(tag)}
   end
 
-  def self.link(children,parents)
+  def self.link(children,parents,status=true)
     link_children = lambda {|children,parent|
       children -= [parent]
       unless children.empty?
@@ -171,7 +169,7 @@ class Tag
     parents = parents.uniq
     children = children.uniq
     parents.each {|parent| link_children.call(children,parent)}
-    Tag.update_status(parents|children)
+    Tag.update_status(parents|children) if status
   end
 
   def initialize(name)
@@ -180,7 +178,7 @@ class Tag
     @children = []
     @items = []     # to be supported
     Tag.tags[name] = self
-    Tag.add_folksonomy(self)
+    Tag.add_folksonomy([self])
   end
 
   def name; @name end

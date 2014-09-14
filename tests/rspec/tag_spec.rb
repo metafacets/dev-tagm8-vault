@@ -1,9 +1,9 @@
 require 'rspec'
 require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\tag.rb'
 require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\tests\fixtures\animal_01.rb'
+include AnimalTaxonomy
 
 describe Tag do
-  include AnimalTaxonomy
   context ':animal > :mouse, :car' do
     before(:all) do
       Tag.empty
@@ -30,7 +30,7 @@ describe Tag do
   end
   context 'folksonomy' do
     before(:all) do
-      animal_taxonomy
+      animal_taxonomy(false)
       all_folks = Tag.tags.values.select {|tag| tag.folk?}
       @omitted_folks = (all_folks-Tag.folksonomy)
       @non_folks = (Tag.folksonomy-all_folks)
@@ -42,7 +42,7 @@ describe Tag do
   end
   context 'roots' do
     before(:all) do
-      animal_taxonomy
+      animal_taxonomy(false)
       all_roots = Tag.tags.values.select {|tag| tag.root?}
       @omitted_roots = (all_roots-Tag.roots)
       @non_roots = (Tag.roots-all_roots)
@@ -953,22 +953,54 @@ describe Tag do
         end
       end
     end
-#    describe 'animal_taxonomy' do
-#      [true,false].each do |instantiate|
-#        describe "instantiate=#{instantiate}" do
-#          animal_taxonomy
-#          taxonomy = Tag.tags
-#          roots = Tag.roots
-#          folks = Tag.folksonomy
-#          animal = Tag.get_tag(:animal)
-#          food = Tag.get_tag(:food)
-#          it 'taxonomy has 6 tags' do expect(taxonomy.size).to eq(6) end
-#          it 'has 2 roots' do expect(roots.size).to eq(2) end
-#          it 'has no folks' do expect(folks.size).to eq(0) end
-#          it ':animal is root' do expect(animal).to be_root end
-#          it ':food is root' do expect(food).to be_root end
-#        end
-#      end
-#    end
+    describe 'double nested hierarchy with siblings' do
+      ['[[:carp,:herring]<:fish,:insect]<:animal'].each do |ddl|
+        describe ddl do
+          Tag.empty
+          Tag.dag_prevent
+          Tag.instantiate(ddl)
+          animal = Tag.get_tag(:animal)
+          fish = Tag.get_tag(:fish)
+          insect = Tag.get_tag(:insect)
+          carp = Tag.get_tag(:carp)
+          herring = Tag.get_tag(:herring)
+          taxonomy = Tag.tags
+          roots = Tag.roots
+          folks = Tag.folksonomy
+          puts "tags=#{taxonomy}"
+          it 'taxonomy has 5 tags' do expect(taxonomy.size).to eq(5) end
+          it 'has 1 root' do expect(roots.size).to eq(1) end
+          it 'has no folks' do expect(folks.size).to eq(0) end
+          it ':animal is root' do expect(animal).to be_root end
+          it ':animal has no parent' do expect(animal).to_not have_parent end
+          it ':animal has 2 children' do expect(animal.children.size).to eq(2) end
+          it ':fish has 1 parent' do expect(fish.parents.size).to eq(1) end
+          it ':fish has 2 children' do expect(fish.children.size).to eq(2) end
+          it ':insect has 1 parent' do expect(insect.parents.size).to eq(1) end
+          it ':insect has no child' do expect(insect).to_not have_child end
+          it ':carp has 1 parent' do expect(carp.parents.size).to eq(1) end
+          it ':carp has no child' do expect(carp).to_not have_child end
+          it ':herring has 1 parent' do expect(herring.parents.size).to eq(1) end
+          it ':herring has no child' do expect(herring).to_not have_child end
+        end
+      end
+    end
+    describe 'animal_taxonomy' do
+      ['add_tags','instantiate'].each do |method|
+        describe "#{method}" do
+          animal_taxonomy(method=='instantiate')
+          taxonomy = Tag.tags
+          roots = Tag.roots
+          folks = Tag.folksonomy
+          animal = Tag.get_tag(:animal)
+          food = Tag.get_tag(:food)
+          it 'taxonomy has 11 tags' do expect(taxonomy.size).to eq(11) end
+          it 'has 2 roots' do expect(roots.size).to eq(2) end
+          it 'has no folks' do expect(folks.size).to eq(0) end
+          it ':animal is root' do expect(animal).to be_root end
+          it ':food is root' do expect(food).to be_root end
+        end
+      end
+    end
   end
 end
