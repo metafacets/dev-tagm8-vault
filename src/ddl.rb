@@ -41,8 +41,8 @@ class Ddl
     }
     stack = []
     link = false
-    tag_ddl.reverse.each do |tag|
-      Debug.show(class:self.class,method:__method__,note:'2',vars:[['tag',tag],['tag.class',tag.class],['stack',stack]])
+    tag_ddl.reverse.each_with_index do |tag, idx|
+      Debug.show(class:self.class,method:__method__,note:'2',vars:[['tag',tag],['idx',idx],['tag.class',tag.class],['stack',stack]])
       if tag.is_a? Array
         stack << self.abstract(tag)
       elsif tag == '>' || tag == '<'
@@ -53,13 +53,17 @@ class Ddl
         stack << [tag]
       end
       Debug.show(class:self.class,method:__method__,note:'3',vars:[['tag',tag],['stack',stack]])
-      if link && tag != '>' &&tag != '<' && stack.size > 1
+      if link && tag != '>' && tag != '<' && stack.size > 1
         or_tags.call(stack) unless stack.empty?
         first = stack.pop
         second = stack.pop
+        Debug.show(class:self.class,method:__method__,note:'Add Links 1',vars:[['link',link],['first',first],['second',second],['idx',idx]])
         link == '>' ? self.links << [second,first] : self.links << [first,second]
         link = false
-        stack << first
+        i = tag_ddl.size-idx-2                                            # next tag index in tag_ddl
+        i > 0 && (tag_ddl[i] == '>'||tag_ddl[i] == '<') ? another_link = true : another_link = false
+        another_link ? stack << first : stack << links[-1][1]             # if another link stack first, else stack parent
+        Debug.show(class:self.class,method:__method__,note:'Add Links 2',vars:[['i',i],['tag_ddl[i]',tag_ddl[i]],['stack',stack],['self.links',self.links]])
       end
     end
     or_tags.call(stack)
