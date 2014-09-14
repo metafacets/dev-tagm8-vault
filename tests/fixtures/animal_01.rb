@@ -23,7 +23,6 @@ module AnimalTaxonomy
       Tag.add_tag(:carp, :food)
       Tag.add_tag(:carpette, :carp)
     end
-    puts "deleting ;mammal"
     Tag.delete_tag(:mammal)
   end
 end

@@ -1,5 +1,6 @@
 require 'rspec'
 require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\tag.rb'
+#require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\debug.rb'
 require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\tests\fixtures\animal_01.rb'
 include AnimalTaxonomy
 
@@ -920,7 +921,41 @@ describe Tag do
       end
     end
     describe 'siblings nest hierarchy' do
-      ['[:a>[:b1,:b2>[:c21,:c22],:b3]]',':a>[:b1,:b2>[:c21,:c22],:b3]','[[:b1,:b2>[:c21,:c22],:b3]<:a]','[:b1,:b2>[:c21,:c22],:b3]<:a'].each do |ddl|
+      [':a>[:b1,:b2>[:c21,:c22],:b3]',':a>[:b2>[:c21,:c22],:b1,:b3]',':a>[:b1,:b3,:b2>[:c21,:c22]]','[:b1,[:c21,:c22]<:b2,:b3]<:a','[[:c21,:c22]<:b2,:b1,:b3]<:a','[:b1,:b3,[:c21,:c22]<:b2]<:a'].each do |ddl|
+        describe ddl do
+          Tag.empty
+          Tag.dag_prevent
+          Tag.instantiate(ddl)
+          a = Tag.get_tag(:a)
+          b1 = Tag.get_tag(:b1)
+          b2 = Tag.get_tag(:b2)
+          b3 = Tag.get_tag(:b3)
+          c21 = Tag.get_tag(:c21)
+          c22 = Tag.get_tag(:c22)
+          taxonomy = Tag.tags
+          roots = Tag.roots
+          folks = Tag.folksonomy
+          it 'taxonomy has 6 tags' do expect(taxonomy.size).to eq(6) end
+          it 'has 1 root' do expect(roots.size).to eq(1) end
+          it 'has no folks' do expect(folks.size).to eq(0) end
+          it ':a is root' do expect(a).to be_root end
+          it ':a has no parent' do expect(a).to_not have_parent end
+          it ':a has 3 children' do expect(a.children.size).to eq(3) end
+          it ':b1 has 1 parent' do expect(b1.parents.size).to eq(1) end
+          it ':b2 has 1 parent' do expect(b2.parents.size).to eq(1) end
+          it ':b3 has 1 parent' do expect(b3.parents.size).to eq(1) end
+          it ':b1 has no child' do expect(b1).to_not have_child end
+          it ':b2 has 2 children' do expect(b2.children.size).to eq(2) end
+          it ':b3 has no child' do expect(b3).to_not have_child end
+          it ':c21 has parent' do expect(c21).to have_parent end
+          it ':c21 has no child' do expect(c21).to_not have_child end
+          it ':c22 has parent' do expect(c22).to have_parent end
+          it ':c22 has no child' do expect(c22).to_not have_child end
+        end
+      end
+    end
+    describe 'siblings nest mixed hierarchy' do
+      [':a>[:b1,[:c21,:c22]<:b2,:b3]','[:b1,:b2>[:c21,:c22],:b3]<:a',':a>[[:c21,:c22]<:b2,:b1,:b3]','[:b2>[:c21,:c22],:b1,:b3]<:a',':a>[:b1,:b3,[:c21,:c22]<:b2]','[:b1,:b3,:b2>[:c21,:c22]]<:a'].each do |ddl|
         describe ddl do
           Tag.empty
           Tag.dag_prevent
@@ -954,7 +989,7 @@ describe Tag do
       end
     end
     describe 'double nested hierarchy with siblings' do
-      ['[[:carp,:herring]<:fish,:insect]<:animal'].each do |ddl|
+      ['[[:carp,:herring]<:fish,:insect]<:animal','[:insect,[:carp,:herring]<:fish]<:animal',':animal>[:insect,:fish>[:carp,:herring]]',':animal>[:fish>[:carp,:herring],:insect]'].each do |ddl|
         describe ddl do
           Tag.empty
           Tag.dag_prevent
@@ -967,7 +1002,6 @@ describe Tag do
           taxonomy = Tag.tags
           roots = Tag.roots
           folks = Tag.folksonomy
-          puts "tags=#{taxonomy}"
           it 'taxonomy has 5 tags' do expect(taxonomy.size).to eq(5) end
           it 'has 1 root' do expect(roots.size).to eq(1) end
           it 'has no folks' do expect(folks.size).to eq(0) end

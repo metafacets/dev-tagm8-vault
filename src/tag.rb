@@ -1,6 +1,7 @@
 require_relative 'debug.rb'
 require_relative 'ddl.rb'
-#Debug.new(class:'Tag',method:'ensure_dag') # comment out to turn off
+#Debug.new(class:'Tag') # comment out to turn off
+#Debug.new(method:'abstract')
 class Tag
   def self.empty?; !Tag.has_tag? && !Tag.has_root? && !Tag.has_folksonomy? end
 
