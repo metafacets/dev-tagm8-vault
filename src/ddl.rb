@@ -62,7 +62,7 @@ class Ddl
         link = false
         i = tag_ddl.size-idx-2                                            # next tag index in tag_ddl
         i > 0 && (tag_ddl[i] == '>'||tag_ddl[i] == '<') ? another_link = true : another_link = false
-        another_link ? stack << first : stack << links[-1][1]             # if another link stack first, else stack parent
+        another_link ? stack << first : stack << links[-1][1]             # if another link stack first, else stack this parent
         Debug.show(class:self.class,method:__method__,note:'Add Links 2',vars:[['i',i],['tag_ddl[i]',tag_ddl[i]],['stack',stack],['self.links',self.links]])
       end
     end
