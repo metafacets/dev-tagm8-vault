@@ -1,160 +1,156 @@
 require_relative 'debug.rb'
 require_relative 'ddl.rb'
+
 #Debug.new(class:'Tag') # comment out to turn off
 #Debug.new(method:'abstract')
-class Tag
-  def self.empty?; !Tag.has_tag? && !Tag.has_root? && !Tag.has_folksonomy? end
 
-  def self.tags=(tags) @@tags = tags end
+class Taxonomy
 
-  def self.roots=(roots) @@roots = roots end
+  def initialize(name='taxonomy')
+    @name = name
+    empty
+  end
 
-  def self.folksonomy=(folks) @@folksonomy = folks end
+  def name=(name) @name = name end
+  def name; @name end
+  def empty?; !has_tag? && !has_root? && !has_folksonomy? end
 
-  def self.dag=(dag=false)
+  def empty
+    @tags = {}
+    @roots = []
+    @folksonomy = []
+    dag_prevent
+  end
+
+  def dag=(dag=false)
     unless dag || (dag.is_a? String && (dag == 'prevent' || dag == 'fix'))
-      @@dag = false
+      @dag = false
     else
-      @@dag = dag
+      @dag = dag
     end
   end
 
-  def self.dag_prevent; Tag.dag = 'prevent' end
+  def dag_prevent; @dag = 'prevent' end
+  def dag_fix; @dag = 'fix' end
+  def dag; @dag end
+  def dag?; !!dag end
+  def dag_prevent?; dag == 'prevent' end
+  def dag_fix?; dag == 'fix' end
+  def tags; @tags end
+  def get_tag(name) tags[name] end
 
-  def self.dag_fix; Tag.dag = 'fix' end
-
-  def self.dag; @@dag end
-
-  def self.dag?; !!Tag.dag end
-
-  def self.dag_prevent?; Tag.dag == 'prevent' end
-
-  def self.dag_fix?; Tag.dag == 'fix' end
-
-  def self.empty
-    Tag.tags = {}
-    Tag.roots = []
-    Tag.folksonomy = []
-    Tag.dag_prevent
-  end
-
-  Tag.empty
-
-
-  def self.tags; @@tags end
-
-  def self.get_tag(name) Tag.tags[name] end
-
-  def self.has_tag?(name=nil)
+  def has_tag?(name=nil)
     if name.nil?
-      !Tag.tags.empty?
+      !tags.empty?
     else
-      Tag.tags.has_key?(name)
+      tags.has_key?(name)
     end
   end
 
-  def self.delete_tag(name)
-    if Tag.has_tag?(name)
-      tag = Tag.get_tag(name)
+  def delete_tag(name)
+    if has_tag?(name)
+      tag = get_tag(name)
       parents = tag.parents.dup
       children = tag.children.dup
-      Tag.subtract_tags([tag])
-      Tag.subtract_roots([tag])
-      Tag.subtract_folksonomy([tag])
-      Tag.update_status(parents|children)
+      subtract_tags([tag])
+      subtract_roots([tag])
+      subtract_folksonomy([tag])
+      update_status(parents|children)
     end
   end
 
-  def self.instantiate(tag_ddl)
+  def instantiate(tag_ddl)
     Ddl.parse(tag_ddl)
-    tags = Ddl.tags.map {|name| Tag.get_lazy_tag(name)}
-    Ddl.links.each do |pair|
-      [0,1].each do |i|
-        pair[i] = pair[i].map {|name| Tag.get_lazy_tag(name)}
+    if Ddl.has_tags?
+      tags = Ddl.tags.map {|name| get_lazy_tag(name)}
+      Ddl.links.each do |pair|
+        [0,1].each do |i|
+          pair[i] = pair[i].map {|name| get_lazy_tag(name)}
+        end
+        link(pair[0],pair[1],false)
       end
-      Tag.link(pair[0],pair[1],false)
+      update_status(tags)
     end
-    Tag.update_status(tags)
   end
 
-  def self.add_tags(names_children, name_parent=nil)
-    children = names_children.map {|name| Tag.get_lazy_tag(name)}.uniq
-    Tag.link(children,[Tag.get_lazy_tag(name_parent)]) unless name_parent.nil?
+  def add_tags(names_children, name_parent=nil)
+    children = names_children.map {|name| get_lazy_tag(name)}.uniq
+    link(children,[get_lazy_tag(name_parent)]) unless name_parent.nil?
   end
 
-  def self.add_tag(name, name_parent=nil) Tag.add_tags([name],name_parent) end
+  def add_tag(name, name_parent=nil) add_tags([name],name_parent) end
 
-  def self.get_lazy_tag(node)
+  def get_lazy_tag(node)
     case
       when node.class == 'Tag'
         node
-      when Tag.has_tag?(node)
-        Tag.get_tag(node)
+      when has_tag?(node)
+        get_tag(node)
       else
-        Tag.new(node)
+        Tag.new(node,self)
     end
   end
 
-  def self.subtract_tags(tags)
-    tags.each {|tag| Tag.tags.delete(tag.name.to_sym)}
+  def subtract_tags(tags_to_delete)
+    tags_to_delete.each {|tag| tags.delete(tag.name.to_sym)}
   end
 
-  def self.roots; @@roots end
+  def roots; @roots end
 
-  def self.has_root?(tag=nil)
+  def has_root?(tag=nil)
     if tag.nil?
-      !Tag.roots.empty?
+      !roots.empty?
     else
-      Tag.roots.include?(tag)
+      roots.include?(tag)
     end
   end
 
-  def self.add_roots(tags) Tag.roots |= tags.to_a end
+  def add_roots(tags) @roots |= tags.to_a end
 
-  def self.subtract_roots(tags) Tag.roots -= tags.to_a end
+  def subtract_roots(tags) @roots -= tags.to_a end
 
-  def self.folksonomy; @@folksonomy end
+  def folksonomy; @folksonomy end
 
-  def self.has_folksonomy?(tag=nil)
+  def has_folksonomy?(tag=nil)
     if tag.nil?
-      !Tag.folksonomy.empty?
+      !folksonomy.empty?
     else
-      Tag.folksonomy.include?(tag)
+      folksonomy.include?(tag)
     end
   end
 
-  def self.add_folksonomy(tags) Tag.folksonomy |= tags.to_a end
+  def add_folksonomy(tags) @folksonomy |= tags.to_a end
 
-  def self.subtract_folksonomy(tags) Tag.folksonomy -= tags.to_a end
+  def subtract_folksonomy(tags) @folksonomy -= tags.to_a end
 
-  def self.update_status(tags)
+  def update_status(tags)
     this_status = lambda {|tag|
       if tag.has_parent?
-        Tag.subtract_roots([tag])
-        Tag.subtract_folksonomy([tag])
+        subtract_roots([tag])
+        subtract_folksonomy([tag])
       else
         if tag.has_child?
-          Tag.add_roots([tag])
-          Tag.subtract_folksonomy([tag])
+          add_roots([tag])
+          subtract_folksonomy([tag])
         else
-          Tag.add_folksonomy([tag])
-          Tag.subtract_roots([tag])
+          add_folksonomy([tag])
+          subtract_roots([tag])
         end
       end
     }
     tags.each {|tag| this_status.call(tag)}
   end
 
-  def self.link(children,parents,status=true)
+  def link(children,parents,status=true)
     link_children = lambda {|children,parent|
       children -= [parent]
       unless children.empty?
         ctags = children.clone
-        ancestors = parent.get_ancestors if Tag.dag?
+        ancestors = parent.get_ancestors if dag?
         children.each do |child|
           Debug.show(class:self.class,method:__method__,note:'1',vars:[['name',child.name],['parent',name]])
-          if Tag.dag? && ancestors.include?(child)
-            if Tag.dag_prevent?
+          if dag? && ancestors.include?(child)
+            if dag_prevent?
               ctags -= [child]
             else
               (parent.parents & child.get_descendents+[child]).each {|grand_parent| parent.delete_parent(grand_parent)}
@@ -170,17 +166,22 @@ class Tag
     parents = parents.uniq
     children = children.uniq
     parents.each {|parent| link_children.call(children,parent)}
-    Tag.update_status(parents|children) if status
+    update_status(parents|children) if status
   end
+end
 
-  def initialize(name)
+class Tag
+  def initialize(name,taxonomy)
+    @taxonomy = taxonomy
     @name = name
     @parents = []
     @children = []
     @items = []     # to be supported
-    Tag.tags[name] = self
-    Tag.add_folksonomy([self])
+    taxonomy.tags[name] = self
+    taxonomy.add_folksonomy([self])
   end
+
+  def taxonomy; @taxonomy end
 
   def name; @name end
 
@@ -216,11 +217,11 @@ class Tag
     if has_child?(child)
       children.delete(child)
       child.parents.delete(self)
-      Tag.update_status([self,child])
+      taxonomy.update_status([self,child])
     end
   end
 
-  def add_children(children); Tag.link(children,[self]) end
+  def add_children(children); taxonomy.link(children,[self]) end
 
   def empty_children; @child = [] end
 
@@ -248,9 +249,9 @@ class Tag
 
   def delete_descendents
     descendents = get_descendents
-    Tag.subtract_tags(descendents)
-    Tag.subtract_roots(descendents)
-    Tag.subtract_folksonomy(descendents)
+    taxonomy.subtract_tags(descendents)
+    taxonomy.subtract_roots(descendents)
+    taxonomy.subtract_folksonomy(descendents)
     empty_children
   end
 
@@ -260,7 +261,7 @@ class Tag
     # delete self and its descendents
     delete_descendents
     parent.delete_child(self)
-    Tag.tags.delete(name)
+    taxonomy.subtract_tags([self])
   end
 
   def add_branch(tag)
