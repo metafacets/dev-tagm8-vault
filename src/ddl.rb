@@ -12,6 +12,7 @@ class Ddl
   def self.ddl; @@ddl end
   def self.tags=(tags) @@tags = tags end
   def self.tags; @@tags end
+  def self.has_tags?; !self.tags.empty? end
   def self.links=(links) @@links = links end
   def self.links; @@links end
   def self.parse(raw_ddl)
