@@ -4,7 +4,7 @@ require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\tag.rb'
 require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\tests\fixtures\animal_01.rb'
 include AnimalTaxonomy
 
-describe Tag do
+describe 'Taxonomy/Tag' do
   context ':animal > :mouse, :car' do
     before(:all) do
       tax = Taxonomy.new
@@ -323,7 +323,7 @@ describe Tag do
         end
       end
     end
-    describe 'Tag.delete_tag' do
+    describe 'Taxonomy.delete_tag' do
       describe 'c -> (b) -> a => c -> a' do
         describe 'before' do
           tax = Taxonomy.new
@@ -466,7 +466,7 @@ describe Tag do
           it ':b has child' do expect(b).to have_child end
           it ':c1 has parent' do expect(c1).to have_parent end
           it ':c2 has parent' do expect(c2).to have_parent end
-          it 'has 2 root2' do expect(roots.size).to eq(2) end
+          it 'has 2 roots' do expect(roots.size).to eq(2) end
           it ':a1 is root' do expect(a1).to be_root end
           it ':a2 is root' do expect(a2).to be_root end
           it 'has no folks' do expect(folks).to be_empty end
@@ -490,10 +490,59 @@ describe Tag do
           it ':a2 has child' do expect(a2).to have_child end
           it ':c1 has parent' do expect(c1).to have_parent end
           it ':c2 has parent' do expect(c2).to have_parent end
-          it 'has 2 root2' do expect(roots.size).to eq(2) end
+          it 'has 2 roots' do expect(roots.size).to eq(2) end
           it ':a1 is root' do expect(a1).to be_root end
           it ':a2 is root' do expect(a2).to be_root end
           it 'has no folks' do expect(folks).to be_empty end
+        end
+      end
+      describe 'b2 -> (a) -> b1 -> c => b2, b1 -> c' do
+        describe 'before' do
+          tax = Taxonomy.new
+          tax.add_tag(:b1,:a)
+          tax.add_tag(:b2,:a)
+          tax.add_tag(:c,:b1)
+          a = tax.get_tag(:a)
+          b1 = tax.get_tag(:b1)
+          b2 = tax.get_tag(:b2)
+          c = tax.get_tag(:c)
+          roots = tax.roots
+          folks = tax.folksonomy
+          it ':a has 2 children' do expect(a.children.size).to eq(2) end
+          it ':a has no parents' do expect(a).to_not have_parent end
+          it ':b1 has parent' do expect(b1).to have_parent end
+          it ':b1 has child' do expect(b1).to have_child end
+          it ':b2 has parent' do expect(b2).to have_parent end
+          it ':b2 has no children' do expect(b2).to_not have_child end
+          it ':c has parent' do expect(c).to have_parent end
+          it ':c has no children' do expect(c).to_not have_child end
+          it 'has 1 root' do expect(roots.size).to eq(1) end
+          it ':a is root' do expect(a).to be_root end
+          it 'has no folks' do expect(folks).to be_empty end
+        end
+        describe 'after' do
+          tax = Taxonomy.new
+          tax.add_tag(:b1,:a)
+          tax.add_tag(:b2,:a)
+          tax.add_tag(:c,:b1)
+          b1 = tax.get_tag(:b1)
+          b2 = tax.get_tag(:b2)
+          c = tax.get_tag(:c)
+          tax.delete_tag(:a)
+          tags = tax.tags
+          roots = tax.roots
+          folks = tax.folksonomy
+          it 'tag :a not included' do expect(tags).to_not have_key(:a) end
+          it ':b1 has no parents' do expect(b1).to_not have_parent end
+          it ':b1 has children' do expect(b1).to have_child end
+          it ':b2 has no parent' do expect(b2).to_not have_parent end
+          it ':b2 has no children' do expect(b2).to_not have_child end
+          it ':c has parent' do expect(c).to have_parent end
+          it ':c has no children' do expect(c).to_not have_child end
+          it 'has 1 root' do expect(roots.size).to eq(1) end
+          it ':b1 is root' do expect(b1).to be_root end
+          it 'has 1 folks' do expect(folks.size).to eq(1) end
+          it ':b2 is folk' do expect(b2).to be_folk end
         end
       end
     end

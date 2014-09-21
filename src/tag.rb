@@ -50,12 +50,23 @@ class Taxonomy
   def delete_tag(name)
     if has_tag?(name)
       tag = get_tag(name)
-      parents = tag.parents.dup
-      children = tag.children.dup
+      parents = tag.parents
+      children = tag.children
+      Debug.show(class:self.class,method:__method__,note:'1',vars:[['tag',tag],['parents',parents],['children',children]])
+      Debug.show(class:self.class,method:__method__,note:'1',vars:[['tags',tags],['roots',roots],['folks',folksonomy]])
+      parents.each do |parent|
+        parent.children -= [tag]
+        parent.children |= children
+      end
+      children.each do |child|
+        child.parents -= [tag]
+        child.parents |= parents
+      end
       subtract_tags([tag])
       subtract_roots([tag])
       subtract_folksonomy([tag])
       update_status(parents|children)
+      Debug.show(class:self.class,method:__method__,note:'2',vars:[['tags',tags],['roots',roots],['folks',folksonomy]])
     end
   end
 
