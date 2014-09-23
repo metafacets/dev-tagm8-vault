@@ -71,9 +71,11 @@ class Taxonomy
   end
 
   def instantiate(tag_ddl)
+    leaves = []
     Ddl.parse(tag_ddl)
     if Ddl.has_tags?
       tags = Ddl.tags.map {|name| get_lazy_tag(name)}
+      leaves = Ddl.leaves.map {|name| get_lazy_tag(name)}
       Ddl.links.each do |pair|
         [0,1].each do |i|
           pair[i] = pair[i].map {|name| get_lazy_tag(name)}
@@ -82,6 +84,7 @@ class Taxonomy
       end
       update_status(tags)
     end
+    leaves
   end
 
   def add_tags(names_children, name_parent=nil)
@@ -236,6 +239,10 @@ class Tag
 
   def empty_children; @child = [] end
 
+  def items; @items end
+
+  def items=(items) @items = items end
+
   def get_ancestors(ancestors=[])
     parents.each {|parent| ancestors |= parent.get_ancestors(parents)}
     ancestors
@@ -280,12 +287,13 @@ class Tag
   end
 
   def inspect
-    pretty_print = lambda {|method|
+    pretty_link = lambda {|method|
       a_p = []
       send(method).each {|tag| a_p += [tag.name] }
       '['+a_p.join(', ')+']'
     }
-    "Tag<name=#{name}, parents=#{pretty_print.call(:parents)}, children=#{pretty_print.call(:children)}>"
+    items.empty? ? pretty_items = '' : pretty_items = ", items=#{items.map {|item| item.name}}"
+    "Tag<name=#{name}, parents=#{pretty_link.call(:parents)}, children=#{pretty_link.call(:children)}#{pretty_items}>"
   end
   def to_s; inspect end
 
