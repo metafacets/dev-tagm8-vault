@@ -62,6 +62,7 @@ class Taxonomy
         child.parents -= [tag]
         child.parents |= parents
       end
+      tag.items.each {|item| item.tags -= [tag]}
       subtract_tags([tag])
       subtract_roots([tag])
       subtract_folksonomy([tag])
@@ -85,6 +86,13 @@ class Taxonomy
       update_status(tags)
     end
     leaves
+  end
+
+  def deprecate(tag_ddl)
+    Ddl.parse(tag_ddl)
+    tags = Ddl.tags.map {|name| get_lazy_tag(name)}
+    Ddl.tags.each {|name| delete_tag(name)} if Ddl.has_tags?
+    tags
   end
 
   def add_tags(names_children, name_parent=nil)
