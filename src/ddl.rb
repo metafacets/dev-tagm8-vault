@@ -15,6 +15,8 @@ class Ddl
   def self.has_tags?; !self.tags.empty? end
   def self.links=(links) @@links = links end
   def self.links; @@links end
+  def self.leaves=(leaves) @@leaves = leaves end
+  def self.leaves; @@leaves end
   def self.parse(raw_ddl)
     self.raw_ddl = raw_ddl
     self.prepare
@@ -29,12 +31,15 @@ class Ddl
       # copy Taxonomy
       self.tags = []
       self.links = []
-      self.abstract(self.ddl)
+      self.leaves = []
+      self.extract_structure(self.ddl)
+      self.extract_leaves
     rescue
       # restore Taxonomy copy
     end
   end
-  def self.abstract(tag_ddl)
+  def self.extract_structure(tag_ddl)
+    # gets tags and links from tag_ddl
     Debug.show(class:self.class,method:__method__,note:'1',vars:[['tag_ddl',tag_ddl],['self.tags',self.tags]])
     or_tags = lambda {|stack|
       Debug.show(class:self.class,method:__method__,note:'1',vars:[['stack',stack]])
@@ -45,7 +50,7 @@ class Ddl
     tag_ddl.reverse.each_with_index do |tag, idx|
       Debug.show(class:self.class,method:__method__,note:'2',vars:[['tag',tag],['idx',idx],['tag.class',tag.class],['stack',stack]])
       if tag.is_a? Array
-        stack << self.abstract(tag)
+        stack << self.extract_structure(tag)
       elsif tag == '>' || tag == '<'
         link = tag
       elsif tag.is_a? String
@@ -63,7 +68,7 @@ class Ddl
         link = false
         i = tag_ddl.size-idx-2                                            # next tag index in tag_ddl
         i > 0 && (tag_ddl[i] == '>'||tag_ddl[i] == '<') ? another_link = true : another_link = false
-        another_link ? stack << first : stack << links[-1][1]             # if another link stack first, else stack this parent
+        another_link ? stack << first : stack << links[-1][1]             # if another link stack first, else stack this parent and add child to leaves
         Debug.show(class:self.class,method:__method__,note:'Add Links 2',vars:[['i',i],['tag_ddl[i]',tag_ddl[i]],['stack',stack],['self.links',self.links]])
       end
     end
@@ -72,6 +77,24 @@ class Ddl
     stack.each {|i| results |= i}
     Debug.show(class:self.class,method:__method__,note:'4',vars:[['results',results]])
     results
+  end
+  def self.extract_leaves
+    # gets leaves from links
+    if links.empty?
+      leaves = self.tags
+    else
+      leaves = []
+      parents = []
+      links.each do |pair|
+        leaves |= pair[0]
+        parents |= pair[1]
+      end
+      puts "extract_leaves 1: leaves=#{leaves}"
+      puts "extract_leaves 2: parents=#{parents}"
+      leaves -= parents
+      puts "extract_leaves 3: leaves=#{leaves}"
+    end
+    self.leaves = leaves
   end
   def self.pre_process
     tag_ddl = self.raw_ddl.dup
