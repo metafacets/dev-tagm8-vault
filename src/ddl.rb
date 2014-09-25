@@ -29,14 +29,17 @@ class Ddl
   def self.process
     begin
       # copy Taxonomy
-      self.tags = []
-      self.links = []
-      self.leaves = []
+      self.wipe
       self.extract_structure(self.ddl)
       self.extract_leaves
     rescue
       # restore Taxonomy copy
     end
+  end
+  def self.wipe
+    self.tags = []
+    self.links = []
+    self.leaves = []
   end
   def self.extract_structure(tag_ddl)
     # gets tags and links from tag_ddl
