@@ -1,3 +1,5 @@
+require_relative 'debug.rb'
+
 class Ddl
   def self.raw_ddl=(raw_ddl)
     Debug.show(class:self.class,method:__method__,note:'1',vars:[['raw_ddl',raw_ddl],['raw_ddl.class',raw_ddl.class]])
@@ -41,16 +43,16 @@ class Ddl
     self.links = []
     self.leaves = []
   end
-  def self.extract_structure(tag_ddl)
+  def self.extract_structure(ddl)
     # gets tags and links from tag_ddl
-    Debug.show(class:self.class,method:__method__,note:'1',vars:[['tag_ddl',tag_ddl],['self.tags',self.tags]])
+    Debug.show(class:self.class,method:__method__,note:'1',vars:[['ddl',ddl],['self.tags',self.tags]])
     or_tags = lambda {|stack|
       Debug.show(class:self.class,method:__method__,note:'1',vars:[['stack',stack]])
       stack.each {|i| self.tags |= i}
     }
     stack = []
     link = false
-    tag_ddl.reverse.each_with_index do |tag, idx|
+    ddl.reverse.each_with_index do |tag, idx|
       Debug.show(class:self.class,method:__method__,note:'2',vars:[['tag',tag],['idx',idx],['tag.class',tag.class],['stack',stack]])
       if tag.is_a? Array
         stack << self.extract_structure(tag)
@@ -69,10 +71,10 @@ class Ddl
         Debug.show(class:self.class,method:__method__,note:'Add Links 1',vars:[['link',link],['first',first],['second',second],['idx',idx]])
         link == '>' ? self.links << [second,first] : self.links << [first,second]
         link = false
-        i = tag_ddl.size-idx-2                                            # next tag index in tag_ddl
-        i > 0 && (tag_ddl[i] == '>'||tag_ddl[i] == '<') ? another_link = true : another_link = false
+        i = ddl.size-idx-2                                            # next tag index in tag_ddl
+        i > 0 && (ddl[i] == '>'||ddl[i] == '<') ? another_link = true : another_link = false
         another_link ? stack << first : stack << links[-1][1]             # if another link stack first, else stack this parent and add child to leaves
-        Debug.show(class:self.class,method:__method__,note:'Add Links 2',vars:[['i',i],['tag_ddl[i]',tag_ddl[i]],['stack',stack],['self.links',self.links]])
+        Debug.show(class:self.class,method:__method__,note:'Add Links 2',vars:[['i',i],['ddl[i]',ddl[i]],['stack',stack],['self.links',self.links]])
       end
     end
     or_tags.call(stack)
@@ -92,10 +94,9 @@ class Ddl
         leaves |= pair[0]
         parents |= pair[1]
       end
-      puts "extract_leaves 1: leaves=#{leaves}"
-      puts "extract_leaves 2: parents=#{parents}"
+      Debug.show(class:self.class,method:__method__,note:'1',vars:[['leaves',leaves],['parents',parents]])
       leaves -= parents
-      puts "extract_leaves 3: leaves=#{leaves}"
+      Debug.show(class:self.class,method:__method__,note:'2',vars:[['leaves',leaves]])
     end
     self.leaves = leaves
   end
