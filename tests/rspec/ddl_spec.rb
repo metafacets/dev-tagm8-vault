@@ -48,6 +48,20 @@ describe Ddl do
           # puts"leaves: expected=#{test[4]}, got=#{Ddl.leaves}, leaves_test=#{(Ddl.leaves&test[4]).sort}"
           it "leaves = #{test[4]}" do expect(leaves_ok).to be true end
         end
+        describe :parse do
+          Ddl.wipe
+          Ddl.parse(test[0])
+          raw_ddl_ok = Ddl.raw_ddl == test[0]
+          ddl_ok = (Ddl.ddl&test[1]) == test[1]
+          tags_ok = (Ddl.tags&test[2]).sort == test[2]
+          links_ok = (Ddl.links&test[3]) == test[3]
+          leaves_ok = (Ddl.leaves&test[4]).sort == test[4]
+          it "raw_ddl = #{test[0]}" do expect(raw_ddl_ok).to be true end
+          it "ddl = #{test[1]}" do expect(ddl_ok).to be true end
+          it "tags = #{test[2]}" do expect(tags_ok).to be true end
+          it "links = #{test[3]}" do expect(links_ok).to be true end
+          it "leaves = #{test[4]}" do expect(leaves_ok).to be true end
+        end
       end
     end
   end
