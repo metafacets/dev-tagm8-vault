@@ -252,7 +252,9 @@ class Tag
   def items=(items) @items = items end
 
   def get_ancestors(ancestors=[])
+    Debug.show(class:self.class,method:__method__,note:'1',vars:[['self',self],['ancestors',ancestors]])
     parents.each {|parent| ancestors |= parent.get_ancestors(parents)}
+    Debug.show(class:self.class,method:__method__,note:'2',vars:[['ancestors',ancestors]])
     ancestors
   end
 

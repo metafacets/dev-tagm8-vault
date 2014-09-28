@@ -1086,4 +1086,38 @@ describe 'Taxonomy/Tag' do
       end
     end
   end
+  describe 'derivation methods' do
+    describe :get_descendents do
+      tests = [[':a>:b>:c',[:b,:c]]\
+              ,[':a>[:b1,:b2]',[:b1,:b2]]\
+              ,[':a>[:b1,:b2>:c]',[:b1,:b2,:c]]\
+              ,[':a>[:b1,:b2]>:c',[:b1,:b2,:c]]\
+              ,[':a>[:b1>[:c1,:c2],:b2,:b3>[:c3,:c4,:c5]]',[:b1,:b2,:b3,:c1,:c2,:c3,:c4,:c5]]
+              ]
+      tests.each do |test|
+        tax = Taxonomy.new
+        tax.instantiate(test[0])
+        a = tax.get_tag(:a)
+        desc = a.get_descendents.map {|d| d.name}.sort
+        desc_ok = (desc&test[1]) == test[1]
+        it "descendents of :a from #{test[0]} = #{test[1]}" do expect(desc_ok).to be true end
+      end
+    end
+    describe :get_ancestors do
+      tests = [[':c>:b>:a',[:b,:c]]\
+              ,['[:b1,:b2]>:a',[:b1,:b2]]\
+              ,[':b1>:a<:b2<:c',[:b1,:b2,:c]]\
+              ,[':a<[:b1,:b2]<:c',[:b1,:b2,:c]]\
+              ,['[:c1,:c2]>:b1>:a<:b2<[:c3,:c4,:c5]',[:b1,:b2,:c1,:c2,:c3,:c4,:c5]]
+      ]
+      tests.each do |test|
+        tax = Taxonomy.new
+        tax.instantiate(test[0])
+        a = tax.get_tag(:a)
+        ancs = a.get_ancestors.map {|d| d.name}.sort
+        ancs_ok = (ancs&test[1]) == test[1]
+        it "ancestors of :a from #{test[0]} = #{test[1]}" do expect(ancs_ok).to be true end
+      end
+    end
+  end
 end
