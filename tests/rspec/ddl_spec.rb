@@ -5,7 +5,7 @@ require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\ddl.rb'
 describe Ddl do
   describe 'instance methods' do
     subject {Ddl}
-    methods = [:raw_ddl=, :raw_ddl, :pre_ddl=, :pre_ddl, :ddl=, :ddl, :tags=, :tags, :has_tags?, :links=, :links,:leaves=,:leaves, :parse, :prepare, :process, :extract_structure, :extract_leaves, :pre_process, :fix_errors, :wipe]
+    methods = [:raw_ddl=, :raw_ddl, :pre_ddl=, :pre_ddl, :ddl=, :ddl, :tags=, :tags, :has_tags?, :links=, :links,:leaves=,:leaves, :parse, :prepare, :process, :get_structure, :get_leaves, :pre_process, :fix_errors, :wipe]
     methods.each {|method| it method do expect(subject).to respond_to(method) end }
   end
   describe :parse do
@@ -31,7 +31,7 @@ describe Ddl do
         end
         describe :extract_structure do
           Ddl.wipe
-          Ddl.extract_structure(test[1])
+          Ddl.get_structure(test[1])
           tags_ok = (Ddl.tags&test[2]).sort == test[2]
           links_ok = (Ddl.links&test[3]) == test[3]
           it "tags = #{test[2]}" do expect(tags_ok).to be true end
@@ -43,7 +43,7 @@ describe Ddl do
           Ddl.wipe
           Ddl.tags = test[2]
           Ddl.links = test[3]
-          Ddl.extract_leaves
+          Ddl.get_leaves
           leaves_ok = (Ddl.leaves&test[4]).sort == test[4]
           # puts"leaves: expected=#{test[4]}, got=#{Ddl.leaves}, leaves_test=#{(Ddl.leaves&test[4]).sort}"
           it "leaves = #{test[4]}" do expect(leaves_ok).to be true end

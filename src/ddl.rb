@@ -32,8 +32,8 @@ class Ddl
     begin
       # copy Taxonomy
       self.wipe
-      self.extract_structure(self.ddl)
-      self.extract_leaves
+      self.get_structure(self.ddl)
+      self.get_leaves
     rescue
       # restore Taxonomy copy
     end
@@ -43,7 +43,7 @@ class Ddl
     self.links = []
     self.leaves = []
   end
-  def self.extract_structure(ddl)
+  def self.get_structure(ddl)
     # gets tags and links from tag_ddl
     Debug.show(class:self.class,method:__method__,note:'1',vars:[['ddl',ddl],['self.tags',self.tags]])
     or_tags = lambda {|stack|
@@ -55,7 +55,7 @@ class Ddl
     ddl.reverse.each_with_index do |tag, idx|
       Debug.show(class:self.class,method:__method__,note:'2',vars:[['tag',tag],['idx',idx],['tag.class',tag.class],['stack',stack]])
       if tag.is_a? Array
-        stack << self.extract_structure(tag)
+        stack << self.get_structure(tag)
       elsif tag == '>' || tag == '<'
         link = tag
       elsif tag.is_a? String
@@ -83,7 +83,7 @@ class Ddl
     Debug.show(class:self.class,method:__method__,note:'4',vars:[['results',results]])
     results
   end
-  def self.extract_leaves
+  def self.get_leaves
     # gets leaves from links
     if links.empty?
       leaves = self.tags
