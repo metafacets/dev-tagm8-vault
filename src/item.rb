@@ -39,9 +39,9 @@ class Item
   def parse_entry(entry)
     # gets @name and @content
     first, *rest = entry.split("\n")
-    puts "parse_entry 1: first=#{first}, rest=#{rest}"
+    Debug.show(class:self.class,method:__method__,note:'1',vars:[['first',first],['rest',rest]])
     @name = first if first
-    puts "parse_entry 2: name=#{name}"
+    Debug.show(class:self.class,method:__method__,note:'2',vars:[['name',name],['rest',rest]])
     if rest
       @content = rest.join("\n")
       puts "parse_entry 3: content=#{content}"
@@ -54,17 +54,17 @@ class Item
     # otherwise taxonomy gets instantiated and item gets tagged by its leaves
     unless content.empty?
       content.scan(/([+|-|=]?)#([^\s]+)/).each do |op,tag_ddl|
-        puts "parse_tags 1: op=#{op}, tag_ddl=#{tag_ddl}"
+        Debug.show(class:self.class,method:__method__,note:'1',vars:[['op',op],['tag_ddl',tag_ddl]])
         if op == '-'
           @tags -= Item.taxonomy.deprecate(tag_ddl)
-          puts "parse_tags 2a: tags=#{tags}, Item.taxonomy.tags=#{Item.taxonomy.tags}"
+          Debug.show(class:self.class,method:__method__,note:'2a',vars:[['tags',tags],['Item.taxonomy.tags',Item.taxonomy.tags]])
         else
           leaves = Item.taxonomy.instantiate(tag_ddl)
           puts "parse_tags 2b: leaves=#{leaves}"
           if op == '' || op == "="
             leaves.each {|tag| tag.items |= [self]}
             @tags |= leaves
-            puts "parse_tags 3: tags=#{tags}, Item.taxonomy.tags=#{Item.taxonomy.tags}"
+            Debug.show(class:self.class,method:__method__,note:'2b',vars:[['tags',tags],['Item.taxonomy.tags',Item.taxonomy.tags]])
           end
         end
       end
@@ -72,13 +72,13 @@ class Item
   end
 end
 
-tax = Taxonomy.new
+#tax = Taxonomy.new
 #tax.instantiate('[:cat,:dog]<:mammal')
 #puts tax.tags
-Item.taxonomy = tax
-item = Item.new("Item 1\n+#[mammal,fish]<:animal>[insect,bird>[parrot,eagle]]\nMy entry =#cat,fish #:dog for my cat and dog")
-puts "item=#{item}, date=#{item.date}, name=#{item.name}, content=#{item.content}, tags=#{item.tags}"
-puts "tax.tags=#{tax.tags}"
+#Item.taxonomy = tax
+#item = Item.new("Item 1\n+#[mammal,fish]<:animal>[insect,bird>[parrot,eagle]]\nMy entry =#cat,fish #:dog for my cat and dog")
+#puts "item=#{item}, date=#{item.date}, name=#{item.name}, content=#{item.content}, tags=#{item.tags}"
+#puts "tax.tags=#{tax.tags}"
 
 
 
