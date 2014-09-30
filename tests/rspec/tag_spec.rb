@@ -1,5 +1,6 @@
 require 'rspec'
 require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\tag.rb'
+require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\item.rb'
 #require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\debug.rb'
 require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\tests\fixtures\animal_01.rb'
 include AnimalTaxonomy
@@ -1117,6 +1118,29 @@ describe 'Taxonomy/Tag' do
         ancs = a.get_ancestors.map {|d| d.name}.sort
         ancs_ok = (ancs&test[1]) == test[1]
         it "ancestors of :a from #{test[0]} = #{test[1]}" do expect(ancs_ok).to be true end
+      end
+    end
+    describe :query_items do
+      # tests = structure with items in brackets,tag_ddl,tags,query :a items, query :b items, query :c items
+      #tests = [[':a(i1)>[:b(i2,i3),:c(i3)]',':a>[:b,:c]',[:a,:b,:c],[:i1,:i2,:i3],[:i2,:i3],[:i3]]]
+      describe ':a(i1)>[:b(i2,i3),:c(i3)]' do
+        tax = Taxonomy.new
+        tax.instantiate(':a>[:b,:c]')
+        a = tax.get_tag(:a)
+        b = tax.get_tag(:b)
+        c = tax.get_tag(:c)
+        i1 = Item.new('i1')
+        i2 = Item.new('i2')
+        i3 = Item.new('i3')
+        a.items = [i1]
+        b.items = [i2,i3]
+        c.items = [i3]
+        query_items_a = a.query_items.map {|item| item.name.to_sym}.sort
+        query_items_b = b.query_items.map {|item| item.name.to_sym}.sort
+        query_items_c = c.query_items.map {|item| item.name.to_sym}.sort
+        it "a.query_items = [:i1,:i2,:i3]" do expect(query_items_a).to eq([:i1,:i2,:i3]) end
+        it "b.query_items = [:i2,:i3]" do expect(query_items_b).to eq([:i2,:i3]) end
+        it "c.query_items = [:i3]" do expect(query_items_c).to eq([:i3]) end
       end
     end
   end
