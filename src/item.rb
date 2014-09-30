@@ -44,7 +44,7 @@ class Item
     Debug.show(class:self.class,method:__method__,note:'2',vars:[['name',name],['rest',rest]])
     if rest
       @content = rest.join("\n")
-      puts "parse_entry 3: content=#{content}"
+      Debug.show(class:self.class,method:__method__,note:'2',vars:[['content',content]])
     end
   end
 
@@ -60,7 +60,7 @@ class Item
           Debug.show(class:self.class,method:__method__,note:'2a',vars:[['tags',tags],['Item.taxonomy.tags',Item.taxonomy.tags]])
         else
           leaves = Item.taxonomy.instantiate(tag_ddl)
-          puts "parse_tags 2b: leaves=#{leaves}"
+          Debug.show(class:self.class,method:__method__,note:'2',vars:[['leaves',leaves]])
           if op == '' || op == "="
             leaves.each {|tag| tag.items |= [self]}
             @tags |= leaves
@@ -70,7 +70,16 @@ class Item
       end
     end
   end
+
+  def query_tags
+    # get tags matching this item - the long way from the Taxonomy
+    # used for testing
+    result = []
+    Item.taxonomy.tags.each_value {|tag| result |= [tag] if tag.items.include? self}
+    result
+  end
 end
+
 
 #tax = Taxonomy.new
 #tax.instantiate('[:cat,:dog]<:mammal')

@@ -99,6 +99,14 @@ describe Item do
           it "Taxonomy.tags = #{test[4]}" do expect(tax_tags).to eq(test[4]) end
           it "items = ['Name']" do expect(items).to eq(['Name']) end
         end
+        describe :query_tags do
+          tax = Taxonomy.new
+          Item.taxonomy = tax
+          Item.items = []
+          item = Item.new(test[0])
+          queried_tags = item.query_tags.map {|tag| tag.name.to_sym}.sort
+          it "query_tags = #{test[3]}" do expect(queried_tags).to eq(test[3]) end
+        end
       end
     end
   end
