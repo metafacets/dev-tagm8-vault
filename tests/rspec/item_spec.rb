@@ -8,7 +8,7 @@ describe Item do
     methods = [:date, :name, :content, :tags, :sees, :instantiate, :parse, :parse_entry, :parse_content]
     methods.each {|method| it method do expect(subject).to respond_to(method) end }
   end
-  describe :instantiate do
+  describe :initialize do
     # test = [[entry,name,content,tags,tax.tags]]
     tests = [["Name\nContent","Name","Content",[],[],[]]\
             ,["Name\nContent\ncont","Name","Content\ncont",[],[]]\
@@ -34,6 +34,7 @@ describe Item do
             ,["Name\nContent #:a>[:b,:c>[:d,:e]]\ncont #a #b,f","Name","Content #:a>[:b,:c>[:d,:e]]\ncont #a #b,f",[:a,:b,:d,:e,:f],[:a,:b,:c,:d,:e,:f]]\
             ,["Name\n#a Content #:a>[:b,:c>[:d,:e]]\ncont #b,f","Name","#a Content #:a>[:b,:c>[:d,:e]]\ncont #b,f",[:a,:b,:d,:e,:f],[:a,:b,:c,:d,:e,:f]]\
             ,["Name\n#b,f Content #:a>[:b,:c>[:d,:e]]\ncont #a","Name","#b,f Content #:a>[:b,:c>[:d,:e]]\ncont #a",[:a,:b,:d,:e,:f],[:a,:b,:c,:d,:e,:f]]\
+            ,["Name\n#b,f Content #:a>[:b,:c>[:d,:e]]\ncont #a -#f,b,c","Name","#b,f Content #:a>[:b,:c>[:d,:e]]\ncont #a -#f,b,c",[:a,:d,:e],[:a,:d,:e]]\
             ]
     tests.each do |test|
       describe test[0] do

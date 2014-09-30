@@ -53,7 +53,7 @@ class Item
     # + or - solely instantiate or deprecate the taxonomy
     # otherwise taxonomy gets instantiated and item gets tagged by its leaves
     unless content.empty?
-      content.scan(/([+|-|=]?)#([^\s]+)/).each do |op,tag_ddl|
+      content.scan(/([+|\-|=]?)#([^\s]+)/).each do |op,tag_ddl|
         Debug.show(class:self.class,method:__method__,note:'1',vars:[['op',op],['tag_ddl',tag_ddl]])
         if op == '-'
           @tags -= Item.taxonomy.deprecate(tag_ddl)
@@ -78,8 +78,8 @@ class Item
     Item.taxonomy.tags.each_value {|tag| result |= [tag] if tag.items.include? self}
     result
   end
-end
 
+end
 
 #tax = Taxonomy.new
 #tax.instantiate('[:cat,:dog]<:mammal')

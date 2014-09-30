@@ -296,6 +296,13 @@ class Tag
     # if self is root add tag as new root else add tag as sibling of self
   end
 
+  def query_items
+    # queries items matching this tag
+    result = items
+    get_descendents.each {|desc| result |= desc.items}
+    result
+  end
+
   def inspect
     pretty_link = lambda {|method|
       a_p = []
