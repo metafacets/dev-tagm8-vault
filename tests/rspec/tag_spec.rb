@@ -1121,8 +1121,6 @@ describe 'Taxonomy/Tag' do
       end
     end
     describe :query_items do
-      # tests = structure with items in brackets,tag_ddl,tags,query :a items, query :b items, query :c items
-      #tests = [[':a(i1)>[:b(i2,i3),:c(i3)]',':a>[:b,:c]',[:a,:b,:c],[:i1,:i2,:i3],[:i2,:i3],[:i3]]]
       describe ':a(i1)>[:b(i2,i3),:c(i3)]' do
         tax = Taxonomy.new
         tax.instantiate(':a>[:b,:c]')
