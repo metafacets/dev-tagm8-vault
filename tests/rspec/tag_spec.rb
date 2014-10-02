@@ -1088,57 +1088,92 @@ describe 'Taxonomy/Tag' do
     end
   end
   describe 'derivation methods' do
-    describe :get_descendents do
-      tests = [[':a>:b>:c',[:b,:c]]\
-              ,[':a>[:b1,:b2]',[:b1,:b2]]\
-              ,[':a>[:b1,:b2>:c]',[:b1,:b2,:c]]\
-              ,[':a>[:b1,:b2]>:c',[:b1,:b2,:c]]\
-              ,[':a>[:b1>[:c1,:c2],:b2,:b3>[:c3,:c4,:c5]]',[:b1,:b2,:b3,:c1,:c2,:c3,:c4,:c5]]
-              ]
-      tests.each do |test|
-        tax = Taxonomy.new
-        tax.instantiate(test[0])
-        a = tax.get_tag(:a)
-        desc = a.get_descendents.map {|d| d.name}.sort
-        desc_ok = (desc&test[1]) == test[1]
-        it "descendents of :a from #{test[0]} = #{test[1]}" do expect(desc_ok).to be true end
+    describe Tag do
+      describe :get_descendents do
+        tests = [[':a>:b>:c',[:b,:c]]\
+                ,[':a>[:b1,:b2]',[:b1,:b2]]\
+                ,[':a>[:b1,:b2>:c]',[:b1,:b2,:c]]\
+                ,[':a>[:b1,:b2]>:c',[:b1,:b2,:c]]\
+                ,[':a>[:b1>[:c1,:c2],:b2,:b3>[:c3,:c4,:c5]]',[:b1,:b2,:b3,:c1,:c2,:c3,:c4,:c5]]
+                ]
+        tests.each do |test|
+          tax = Taxonomy.new
+          tax.instantiate(test[0])
+          a = tax.get_tag(:a)
+          desc = a.get_descendents.map {|d| d.name}.sort
+          desc_ok = (desc&test[1]) == test[1]
+          it "descendents of :a from #{test[0]} = #{test[1]}" do expect(desc_ok).to be true end
+        end
+      end
+      describe :get_ancestors do
+        tests = [[':c>:b>:a',[:b,:c]]\
+                ,['[:b1,:b2]>:a',[:b1,:b2]]\
+                ,[':b1>:a<:b2<:c',[:b1,:b2,:c]]\
+                ,[':a<[:b1,:b2]<:c',[:b1,:b2,:c]]\
+                ,['[:c1,:c2]>:b1>:a<:b2<[:c3,:c4,:c5]',[:b1,:b2,:c1,:c2,:c3,:c4,:c5]]
+        ]
+        tests.each do |test|
+          tax = Taxonomy.new
+          tax.instantiate(test[0])
+          a = tax.get_tag(:a)
+          ancs = a.get_ancestors.map {|d| d.name}.sort
+          ancs_ok = (ancs&test[1]) == test[1]
+          it "ancestors of :a from #{test[0]} = #{test[1]}" do expect(ancs_ok).to be true end
+        end
+      end
+      describe :query_items do
+        describe ':a(i1)>[:b(i2,i3),:c(i3)]' do
+          tax = Taxonomy.new
+          tax.instantiate(':a>[:b,:c]')
+          a = tax.get_tag(:a)
+          b = tax.get_tag(:b)
+          c = tax.get_tag(:c)
+          i1 = Item.new('i1')
+          i2 = Item.new('i2')
+          i3 = Item.new('i3')
+          a.items = [i1]
+          b.items = [i2,i3]
+          c.items = [i3]
+          query_items_a = a.query_items.map {|item| item.name.to_sym}.sort
+          query_items_b = b.query_items.map {|item| item.name.to_sym}.sort
+          query_items_c = c.query_items.map {|item| item.name.to_sym}.sort
+          it "a.query_items = [:i1,:i2,:i3]" do expect(query_items_a).to eq([:i1,:i2,:i3]) end
+          it "b.query_items = [:i2,:i3]" do expect(query_items_b).to eq([:i2,:i3]) end
+          it "c.query_items = [:i3]" do expect(query_items_c).to eq([:i3]) end
+        end
       end
     end
-    describe :get_ancestors do
-      tests = [[':c>:b>:a',[:b,:c]]\
-              ,['[:b1,:b2]>:a',[:b1,:b2]]\
-              ,[':b1>:a<:b2<:c',[:b1,:b2,:c]]\
-              ,[':a<[:b1,:b2]<:c',[:b1,:b2,:c]]\
-              ,['[:c1,:c2]>:b1>:a<:b2<[:c3,:c4,:c5]',[:b1,:b2,:c1,:c2,:c3,:c4,:c5]]
-      ]
-      tests.each do |test|
-        tax = Taxonomy.new
-        tax.instantiate(test[0])
-        a = tax.get_tag(:a)
-        ancs = a.get_ancestors.map {|d| d.name}.sort
-        ancs_ok = (ancs&test[1]) == test[1]
-        it "ancestors of :a from #{test[0]} = #{test[1]}" do expect(ancs_ok).to be true end
-      end
-    end
-    describe :query_items do
-      describe ':a(i1)>[:b(i2,i3),:c(i3)]' do
-        tax = Taxonomy.new
-        tax.instantiate(':a>[:b,:c]')
-        a = tax.get_tag(:a)
-        b = tax.get_tag(:b)
-        c = tax.get_tag(:c)
-        i1 = Item.new('i1')
-        i2 = Item.new('i2')
-        i3 = Item.new('i3')
-        a.items = [i1]
-        b.items = [i2,i3]
-        c.items = [i3]
-        query_items_a = a.query_items.map {|item| item.name.to_sym}.sort
-        query_items_b = b.query_items.map {|item| item.name.to_sym}.sort
-        query_items_c = c.query_items.map {|item| item.name.to_sym}.sort
-        it "a.query_items = [:i1,:i2,:i3]" do expect(query_items_a).to eq([:i1,:i2,:i3]) end
-        it "b.query_items = [:i2,:i3]" do expect(query_items_b).to eq([:i2,:i3]) end
-        it "c.query_items = [:i3]" do expect(query_items_c).to eq([:i3]) end
+    describe Taxonomy do
+      describe :query_items do
+        describe ':a(i1)>[:b1(i2)>[:c1(i3),:c2(i3,i4)],:b2>[:c3,:c4(i4)]]' do
+          tests = [['#a',[:i1,:i2,:i3,:i4]]\
+                  ,['#b1',[:i2,:i3,:i4]]\
+                  ,['#b2',[:i4]]\
+                  ,['#c1',[:i3]]\
+                  ,['#c2',[:i3,:i4]]\
+                  ,['#c3',[]]\
+                  ,['#c4',[:i4]]\
+                  ,['#x',[:i5]]\
+                  ,['#c4|#c1',[:i3,:i4]]\
+                  ,['#c4&#c1',[]]\
+                  ,['#c4|#c2',[:i3,:i4]]\
+                  ,['#c4&#c2',[:i4]]\
+                  ,['(#c4&#c2)|#x',[:i4,:i5]]\
+                  ]
+          tests.each do |test|
+            tax = Taxonomy.new
+            tax.instantiate(':a>[:b1>[:c1,:c2],:b2>[:c3,:c4]]')
+            #puts tax.tags
+            Item.taxonomy = tax
+            Item.new("i1\n#a")
+            Item.new("i2\n#b1")
+            Item.new("i3\n#c1,c2")
+            Item.new("i4\n#c2,c4")
+            Item.new("i5\n#x")
+            result = tax.query_items(test[0]).map {|item| item.name.to_sym}.sort
+            it "query=#{test[0]}, result=#{test[1]}" do expect(result).to eq(test[1]) end
+          end
+        end
       end
     end
   end

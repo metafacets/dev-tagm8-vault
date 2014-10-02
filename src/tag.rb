@@ -1,5 +1,6 @@
 require_relative 'debug.rb'
 require_relative 'ddl.rb'
+require_relative 'query.rb'
 
 #Debug.new(class:'Tag') # comment out to turn off
 #Debug.new(method:'abstract')
@@ -93,6 +94,11 @@ class Taxonomy
     tags = Ddl.tags.map {|name| get_lazy_tag(name)}
     Ddl.tags.each {|name| delete_tag(name)} if Ddl.has_tags?
     tags
+  end
+
+  def query_items(query)
+    Query.taxonomy = self
+    eval(Query.parse(query))
   end
 
   def add_tags(names_children, name_parent=nil)
