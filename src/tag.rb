@@ -98,7 +98,11 @@ class Taxonomy
 
   def query_items(query)
     Query.taxonomy = self
-    eval(Query.parse(query))
+    begin
+      eval(Query.parse(query))
+    rescue SyntaxError
+      []
+    end
   end
 
   def add_tags(names_children, name_parent=nil)

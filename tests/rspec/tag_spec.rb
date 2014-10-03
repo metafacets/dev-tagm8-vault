@@ -1146,42 +1146,77 @@ describe 'Taxonomy/Tag' do
     describe Taxonomy do
       describe :query_items do
         describe ':a(i1)>[:b1(i2)>[:c1(i3),:c2(i3,i4)],:b2>[:c3,:c4(i4)]]' do
-          tests = [['#a',[:i1,:i2,:i3,:i4]]\
-                  ,['#A',[:i1,:i2,:i3,:i4]]\
-                  ,['#:a',[:i1,:i2,:i3,:i4]]\
-                  ,['a',[:i1,:i2,:i3,:i4]]\
-                  ,[':a',[:i1,:i2,:i3,:i4]]\
-                  ,['#b1',[:i2,:i3,:i4]]\
-                  ,['#b2',[:i4]]\
-                  ,['#c1',[:i3]]\
-                  ,['#c2',[:i3,:i4]]\
-                  ,['#c3',[]]\
-                  ,['#c4',[:i4]]\
-                  ,['#x',[:i5]]\
-                  ,['#c4|#c1',[:i3,:i4]]\
-                  ,['#c4,#c1',[:i3,:i4]]\
-                  ,['#c4&#c1',[]]\
-                  ,['#c4|#c2',[:i3,:i4]]\
-                  ,['#c4&#c2',[:i4]]\
-                  ,['#c4+#c2',[:i4]]\
-                  ,['#c4#c2',[:i4]]\
-                  ,['(#c4&#c2)|#x',[:i4,:i5]]\
-                  ,['#x_',[]]\
-                  ,['#1x',[]]\
-                  ,['#y',[]]\
-                  ]
-          tests.each do |test|
-            tax = Taxonomy.new
-            tax.instantiate(':a>[:b1>[:c1,:c2],:b2>[:c3,:c4]]')
-            #puts tax.tags
-            Item.taxonomy = tax
-            Item.new("i1\n#a")
-            Item.new("i2\n#b1")
-            Item.new("i3\n#c1,c2")
-            Item.new("i4\n#c2,c4")
-            Item.new("i5\n#x")
-            result = tax.query_items(test[0]).map {|item| item.name.to_sym}.sort
-            it "query=#{test[0]}, result=#{test[1]}" do expect(result).to eq(test[1]) end
+          describe 'basic syntax' do
+            tests = [['#a',[:i1,:i2,:i3,:i4]]\
+                    ,['#A',[:i1,:i2,:i3,:i4]]\
+                    ,['#:a',[:i1,:i2,:i3,:i4]]\
+                    ,['a',[:i1,:i2,:i3,:i4]]\
+                    ,[':a',[:i1,:i2,:i3,:i4]]\
+                    ,['#b1',[:i2,:i3,:i4]]\
+                    ,['#b2',[:i4]]\
+                    ,['#c1',[:i3]]\
+                    ,['#c2',[:i3,:i4]]\
+                    ,['#c3',[]]\
+                    ,['#c4',[:i4]]\
+                    ,['#x',[:i5]]\
+                    ,['#c4|#c1',[:i3,:i4]]\
+                    ,['#c4,#c1',[:i3,:i4]]\
+                    ,['#c4&#c1',[]]\
+                    ,['#c4|#c2',[:i3,:i4]]\
+                    ,['#c4&#c2',[:i4]]\
+                    ,['#c4+#c2',[:i4]]\
+                    ,['#c4#c2',[:i4]]\
+                    ,['(#c4&#c2)|#x',[:i4,:i5]]\
+                    ,['(#c4&#c2|#x',[]]\
+                    ,['#x_',[]]\
+                    ,['#1x',[]]\
+                    ,['#y',[]]\
+                    ]
+            tests.each do |test|
+              tax = Taxonomy.new
+              tax.instantiate(':a>[:b1>[:c1,:c2],:b2>[:c3,:c4]]')
+              #puts tax.tags
+              Item.taxonomy = tax
+              Item.new("i1\n#a")
+              Item.new("i2\n#b1")
+              Item.new("i3\n#c1,c2")
+              Item.new("i4\n#c2,c4")
+              Item.new("i5\n#x")
+              result = tax.query_items(test[0]).map {|item| item.name.to_sym}.sort
+              it "query=#{test[0]}, result=#{test[1]}" do expect(result).to eq(test[1]) end
+            end
+          end
+          describe 'bad syntax, resolvable or not' do
+            tests = [['#A',[:i1,:i2,:i3,:i4]]\
+                    ,['#:a',[:i1,:i2,:i3,:i4]]\
+                    ,['a',[:i1,:i2,:i3,:i4]]\
+                    ,[':a',[:i1,:i2,:i3,:i4]]\
+                    ,['#c4,#c1',[:i3,:i4]]\
+                    ,['#c4,|#c1',[:i3,:i4]]\
+                    ,['#c4|,#c1',[:i3,:i4]]\
+                    ,['#c4&#c1',[]]\
+                    ,['#c4+#c2',[:i4]]\
+                    ,['#c4+&#c2',[:i4]]\
+                    ,['#c4&+#c2',[:i4]]\
+                    ,['#c4#c2',[:i4]]\
+                    ,['(#c4&#c2|#x',[]]\
+                    ,['#x_',[]]\
+                    ,['#1x',[]]\
+                    ,['#y',[]]\
+                    ]
+            tests.each do |test|
+              tax = Taxonomy.new
+              tax.instantiate(':a>[:b1>[:c1,:c2],:b2>[:c3,:c4]]')
+              #puts tax.tags
+              Item.taxonomy = tax
+              Item.new("i1\n#a")
+              Item.new("i2\n#b1")
+              Item.new("i3\n#c1,c2")
+              Item.new("i4\n#c2,c4")
+              Item.new("i5\n#x")
+              result = tax.query_items(test[0]).map {|item| item.name.to_sym}.sort
+              it "query=#{test[0]}, result=#{test[1]}" do expect(result).to eq(test[1]) end
+            end
           end
         end
       end

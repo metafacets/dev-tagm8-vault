@@ -41,10 +41,10 @@ class Query
       name.gsub!(/.*_$/,'[]')
       name.gsub!(/^\d.*/,'[]')
       name != '[]' && self.taxonomy.has_tag?(name.to_sym) ? name = "get_tag('#{name}'.to_sym).query_items" : name = '[]'
-      puts "Query.pre_process 1: match=#{match}, name=#{name}"
+#      puts "Query.pre_process 1: match=#{match}, name=#{name}"
       query.gsub!(/#{match}/,name)
     end
-    puts "Query.pre_process 2: self.raw_ql=#{self.raw_ql}, query=#{query}"
+#    puts "Query.pre_process 2: self.raw_ql=#{self.raw_ql}, query=#{query}"
     Debug.show(class:self.class,method:__method__,note:'2',vars:[['query',query],['query.class',query.class]])
     self.ql = query
     query
