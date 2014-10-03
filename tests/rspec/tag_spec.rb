@@ -1148,9 +1148,6 @@ describe 'Taxonomy/Tag' do
         describe ':a(i1)>[:b1(i2)>[:c1(i3),:c2(i3,i4)],:b2>[:c3,:c4(i4)]]' do
           describe 'basic syntax' do
             tests = [['#a',[:i1,:i2,:i3,:i4]]\
-                    ,['#A',[:i1,:i2,:i3,:i4]]\
-                    ,['#:a',[:i1,:i2,:i3,:i4]]\
-                    ,['a',[:i1,:i2,:i3,:i4]]\
                     ,[':a',[:i1,:i2,:i3,:i4]]\
                     ,['#b1',[:i2,:i3,:i4]]\
                     ,['#b2',[:i4]]\
@@ -1160,17 +1157,11 @@ describe 'Taxonomy/Tag' do
                     ,['#c4',[:i4]]\
                     ,['#x',[:i5]]\
                     ,['#c4|#c1',[:i3,:i4]]\
-                    ,['#c4,#c1',[:i3,:i4]]\
                     ,['#c4&#c1',[]]\
                     ,['#c4|#c2',[:i3,:i4]]\
                     ,['#c4&#c2',[:i4]]\
-                    ,['#c4+#c2',[:i4]]\
                     ,['#c4#c2',[:i4]]\
                     ,['(#c4&#c2)|#x',[:i4,:i5]]\
-                    ,['(#c4&#c2|#x',[]]\
-                    ,['#x_',[]]\
-                    ,['#1x',[]]\
-                    ,['#y',[]]\
                     ]
             tests.each do |test|
               tax = Taxonomy.new
@@ -1186,7 +1177,7 @@ describe 'Taxonomy/Tag' do
               it "query=#{test[0]}, result=#{test[1]}" do expect(result).to eq(test[1]) end
             end
           end
-          describe 'bad syntax, resolvable or not' do
+          describe 'alternate, poor or bad syntax' do
             tests = [['#A',[:i1,:i2,:i3,:i4]]\
                     ,['#:a',[:i1,:i2,:i3,:i4]]\
                     ,['a',[:i1,:i2,:i3,:i4]]\
@@ -1194,7 +1185,6 @@ describe 'Taxonomy/Tag' do
                     ,['#c4,#c1',[:i3,:i4]]\
                     ,['#c4,|#c1',[:i3,:i4]]\
                     ,['#c4|,#c1',[:i3,:i4]]\
-                    ,['#c4&#c1',[]]\
                     ,['#c4+#c2',[:i4]]\
                     ,['#c4+&#c2',[:i4]]\
                     ,['#c4&+#c2',[:i4]]\
