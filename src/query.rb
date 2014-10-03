@@ -28,9 +28,23 @@ class Query
   def self.interpolate
     query = self.raw_ql.dup
     Debug.show(class:self.class,method:__method__,note:'1',vars:[['query',query],['query.class',query.class]])
-    ':_,'.each_char {|op| query = eval("query.gsub(/#{op}+/,op)")}  # filter obvious duplicates
-    query = query.gsub(/#([a-zA-Z1-9]+)/,'get_tag(\'\1\'.to_sym).query_items')
-#    puts "Query.pre_process 1: self.raw_ql=#{self.raw_ql}, query=#{query}"
+    [':','\s'].each {|char| query = eval("query.gsub(/#{char}/,'')")} # filter redundant
+    query.gsub!(/([a-zA-Z1-9_]+)(#[a-zA-Z1-9_]+)/,'\1&\2')            # missing operator, interpret as &
+    query.gsub!(/,/,'|')                                              # , = |
+    query.gsub!(/\+/,'&')                                             # + = &
+    query.gsub!(/\|+/,'|')                                            # filter repeated |
+    query.gsub!(/&+/,'&')                                             # filter repeated &
+    temp = query.dup
+    temp.scan(/#?:?[a-zA-Z1-9_]+/).each do |match|                    # interpolate tag syntax including misnamed or missing tags
+      name = match.downcase
+      name.gsub!(/^#?/,'')
+      name.gsub!(/.*_$/,'[]')
+      name.gsub!(/^\d.*/,'[]')
+      name != '[]' && self.taxonomy.has_tag?(name.to_sym) ? name = "get_tag('#{name}'.to_sym).query_items" : name = '[]'
+      puts "Query.pre_process 1: match=#{match}, name=#{name}"
+      query.gsub!(/#{match}/,name)
+    end
+    puts "Query.pre_process 2: self.raw_ql=#{self.raw_ql}, query=#{query}"
     Debug.show(class:self.class,method:__method__,note:'2',vars:[['query',query],['query.class',query.class]])
     self.ql = query
     query
