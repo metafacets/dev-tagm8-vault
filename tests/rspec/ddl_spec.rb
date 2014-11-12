@@ -1,6 +1,6 @@
 require 'rspec'
 require 'facets'
-require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\ddl.rb'
+require_relative '../../src/app/ddl'
 
 describe Ddl do
   describe 'instance methods' do

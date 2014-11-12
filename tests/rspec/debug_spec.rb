@@ -1,5 +1,5 @@
 require 'rspec'
-require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\debug.rb'
+require_relative '../../src/app/debug'
 
 describe Debug do
   context :include? do

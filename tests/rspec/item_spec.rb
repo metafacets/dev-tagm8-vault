@@ -1,5 +1,5 @@
 require 'rspec'
-require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\item.rb'
+require_relative '../../src/app/item'
 
 describe Item do
   describe 'instance methods' do

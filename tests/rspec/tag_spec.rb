@@ -1,8 +1,8 @@
 require 'rspec'
-require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\tag.rb'
-require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\item.rb'
-#require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\debug.rb'
-require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\tests\fixtures\animal_01.rb'
+require_relative '../../src/app/tag'
+require_relative '../../src/app/item'
+#require_relative '../../src/app/debug'
+require_relative '../../tests/fixtures/animal_01'
 include AnimalTaxonomy
 
 describe 'Taxonomy/Tag' do

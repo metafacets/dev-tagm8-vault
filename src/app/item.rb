@@ -1,5 +1,5 @@
-require_relative 'debug.rb'
-require_relative 'tag.rb'
+require_relative 'debug'
+require_relative 'tag'
 
 #Debug.new(class:'Tag') # comment out to turn off
 #Debug.new(method:'abstract')

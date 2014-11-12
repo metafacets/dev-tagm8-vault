@@ -1,5 +1,5 @@
-require_relative 'debug.rb'
-require_relative 'tag.rb'
+require_relative 'debug'
+require_relative 'tag'
 
 class Query
   def self.raw_ql=(raw_ql)

@@ -1,4 +1,4 @@
-require_relative 'debug.rb'
+require_relative 'debug'
 
 class Ddl
   def self.raw_ddl=(raw_ddl)

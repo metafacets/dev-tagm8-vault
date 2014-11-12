@@ -1,6 +1,6 @@
-require_relative 'debug.rb'
-require_relative 'ddl.rb'
-require_relative 'query.rb'
+require_relative 'debug'
+require_relative 'ddl'
+require_relative 'query'
 
 #Debug.new(class:'Tag') # comment out to turn off
 #Debug.new(method:'abstract')

@@ -1,4 +1,4 @@
-require_relative 'debug_item.rb'
+require_relative 'debug_item'
 
 class Debug
   def self.empty; @@outputs = [] end

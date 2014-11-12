@@ -1,5 +1,5 @@
-require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\debug.rb'
-require 'C:\Users\anthony\Documents\My Workspaces\RubyMine\tagm8\src\tag.rb'
+require_relative '../../src/app/debug'
+require_relative '../../src/app/tag'
 
 Debug.new(tags:[:test]) # comment out to turn off
 
