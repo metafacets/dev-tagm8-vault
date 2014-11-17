@@ -1,11 +1,12 @@
 require_relative 'debug'
 require_relative 'ddl'
 require_relative 'query'
+require_relative '../../src/model/mongo_mapper_db'
 
 #Debug.new(class:'Tag') # comment out to turn off
 #Debug.new(method:'abstract')
 
-class Taxonomy
+class Taxonomy < PTaxonomy
 
   def initialize(name='taxonomy')
     @name = name
@@ -202,30 +203,19 @@ class Taxonomy
   end
 end
 
-class Tag
+class Tag < PTag
   def initialize(name,taxonomy)
-    @taxonomy = taxonomy
-    @name = name
-    @parents = []
-    @children = []
-    @items = []     # to be supported
-    taxonomy.tags[name] = self
-    taxonomy.add_folksonomy([self])
+    super(name:name,taxonomy:taxonomy,is_root:false, is_folk:true)
+#    @parents = []
+#    @children = []
+#    @items = []     # to be supported
   end
-
-  def taxonomy; @taxonomy end
-
-  def name; @name end
-
-  def parents; @parents end
-
-  def parents=(parents) @parents = parents end
 
   def has_parent?(tag=nil)
     if tag.nil?
       !parents.to_a.empty?
     else
-      parents.include?(tag)
+      parents.include?(tag._id)
     end
   end
 
@@ -233,15 +223,11 @@ class Tag
 
   def add_parents(parents); Tag.link([self],parents) end
 
-  def children; @children end
-
-  def children=(children) @children = children end
-
   def has_child?(tag=nil)
     if tag.nil?
       !children.to_a.empty?
     else
-      children.include?(tag)
+      children.include?(tag._id)
     end
   end
 
@@ -255,7 +241,7 @@ class Tag
 
   def add_children(children); taxonomy.link(children,[self]) end
 
-  def empty_children; @child = [] end
+  def empty_children; @children = [] end
 
   def items; @items end
 
