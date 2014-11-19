@@ -2,8 +2,8 @@ require 'active_support'
 require 'mongo_mapper'
 
 MongoMapper.connection = Mongo::Connection.new('localhost')
-MongoMapper.database = 'mmapper'
-MongoMapper.connection.drop_database('mmapper')
+MongoMapper.database = 'tagm8'
+MongoMapper.connection.drop_database('tagm8')
 
 class PTaxonomy
   include MongoMapper::Document

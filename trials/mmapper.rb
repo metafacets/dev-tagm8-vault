@@ -32,7 +32,7 @@ class Tag < PTag
   end
 end
 
-java = Tag.new(name:'java',is_root:true)
+java = Tag.new(name:'java')
 python = Tag.new(name:'python')
 prog = Tag.new(name:'programming languages',children:[java],is_root:true)
 tax1 = Taxonomy.new(name:'tax1',tags:[java,python])
@@ -50,4 +50,6 @@ Tag.where(:name.gt => 'java').each {|i| puts i.name}
 puts "roots coount = #{Tag.all(is_root:true).size}"
 puts "java is_root = #{java.is_root}"
 puts "prog.children.include?(java) = #{prog.children.include?(java._id)}"
+puts "tax1 has_tags=#{!tax1.tags.empty?}"
+puts "tax1 has_root(java)=#{!tax1.tags.all(name:'java',is_root:true).empty?}"
 

@@ -9,18 +9,13 @@ require_relative '../../src/model/mongo_mapper_db'
 class Taxonomy < PTaxonomy
 
   def initialize(name='taxonomy')
-    @name = name
+    super(name:name)
     empty
   end
 
-  def name=(name) @name = name end
-  def name; @name end
   def empty?; !has_tag? && !has_root? && !has_folksonomy? end
 
   def empty
-    @tags = {}
-    @roots = []
-    @folksonomy = []
     dag_prevent
   end
 
@@ -45,7 +40,7 @@ class Taxonomy < PTaxonomy
     if name.nil?
       !tags.empty?
     else
-      tags.has_key?(name)
+      tags.all(:name => name).empty?
     end
   end
 
@@ -132,9 +127,9 @@ class Taxonomy < PTaxonomy
 
   def has_root?(tag=nil)
     if tag.nil?
-      !roots.empty?
+      !tags.all(is_root:true).empty?
     else
-      roots.include?(tag)
+      !tags.all(is_root:true,_id:tag.id).empty?
     end
   end
 
@@ -146,9 +141,9 @@ class Taxonomy < PTaxonomy
 
   def has_folksonomy?(tag=nil)
     if tag.nil?
-      !folksonomy.empty?
+      !tags.all(is_folk:true).empty?
     else
-      folksonomy.include?(tag)
+      !tags.all(is_folk:true,_id:tag.id).empty?
     end
   end
 
@@ -242,10 +237,6 @@ class Tag < PTag
   def add_children(children); taxonomy.link(children,[self]) end
 
   def empty_children; @children = [] end
-
-  def items; @items end
-
-  def items=(items) @items = items end
 
   def get_ancestors(ancestors=[])
     Debug.show(class:self.class,method:__method__,note:'1',vars:[['self',self],['ancestors',ancestors]])
