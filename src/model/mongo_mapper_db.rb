@@ -113,7 +113,7 @@ class PTaxonomy
 
   def update_status(tags)
     this_status = lambda {|tag|
-      puts "PTaxonomy.update_status: tag=#{tag}, tag.has_parent?=#{tag.has_parent?}, tag.has_child?=#{tag.has_child?}"
+      #puts "PTaxonomy.update_status: tag=#{tag}, tag.has_parent?=#{tag.has_parent?}, tag.has_child?=#{tag.has_child?}"
       if tag.has_parent?
         tag.set(is_root:false,is_folk:false)
       else
@@ -129,7 +129,7 @@ class PTaxonomy
 
   def link(children,parents,status=true)
     link_children = lambda {|children,parent|
-      puts "PTaxonomy.link.link_children: parent=#{parent}"
+      #puts "PTaxonomy.link.link_children: parent=#{parent}"
       children -= [parent]
       unless children.empty?
         ctags = children.clone
@@ -137,7 +137,7 @@ class PTaxonomy
         children.each do |child|
           Debug.show(class:self.class,method:__method__,note:'1',vars:[['name',child.name],['parent',name]])
           if dag? && ancestors.include?(child)
-            puts "PTaxonomy.link.link_children: child=#{child}, ancestors=#{ancestors}, dag_prevent?=#{dag_prevent?}"
+            #puts "PTaxonomy.link.link_children: child=#{child}, ancestors=#{ancestors}, dag_prevent?=#{dag_prevent?}"
             if dag_prevent?
               ctags -= [child]
             else
@@ -156,7 +156,7 @@ class PTaxonomy
     }
     parents = parents.uniq
     children = children.uniq
-    puts "PTaxonomy.link: parents=#{parents}, children=#{children}"
+    #puts "PTaxonomy.link: parents=#{parents}, children=#{children}"
     parents.each {|parent| link_children.call(children,parent)}
     update_status(parents|children) if status
   end
@@ -184,7 +184,7 @@ class PTag
 
   def has_parent?(tag=nil)
     tags = PTag.first(_id:_id.to_s).parents
-    puts "** Tag:has_parent? 1: parents=#{parents}, tags_by_name=#{get_taxonomy.get_names_by_id(tags)}, self.name=#{self.name}"
+    #puts "** Tag:has_parent? 1: parents=#{parents}, tags_by_name=#{get_taxonomy.get_names_by_id(tags)}, self.name=#{self.name}"
     if tag.nil?
       !tags.empty?
     else

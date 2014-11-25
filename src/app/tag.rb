@@ -38,12 +38,12 @@ class Taxonomy < PTaxonomy
 
   def delete_tag(name)
     if has_tag?(name)
-      puts "Taxonomy.delete_tag: name=#{name}"
+      #puts "Taxonomy.delete_tag: name=#{name}"
       tag = get_tag_by_name(name)
-      puts "Taxonomy.delete_tag: tag=#{tag}"
+      #puts "Taxonomy.delete_tag: tag=#{tag}"
       parents = tag.get_parents
       children = tag.get_children
-      puts "Taxonomy.delete_tag: parents=#{parents}, children=#{children}"
+      #puts "Taxonomy.delete_tag: parents=#{parents}, children=#{children}"
       Debug.show(class:self.class,method:__method__,note:'1',vars:[['tag',tag],['parents',parents],['children',children]])
       Debug.show(class:self.class,method:__method__,note:'1',vars:[['tags',tags],['roots',roots],['folks',folksonomy]])
       parents.each do |parent|
@@ -59,14 +59,14 @@ class Taxonomy < PTaxonomy
         parents.each{|parent| child.add_to_set(parents:parent._id.to_s)}
       end
       tag.items.each {|item| item.tags -= [tag]}
-      puts "Taxonomy.delete_tag: tag_count=#{tag_count}, tags=#{tags}"
+      #puts "Taxonomy.delete_tag: tag_count=#{tag_count}, tags=#{tags}"
       subtract_tags([tag])
-      puts "Taxonomy.delete_tag: tag_count=#{tag_count}, tags=#{tags}"
+      #puts "Taxonomy.delete_tag: tag_count=#{tag_count}, tags=#{tags}"
       #puts "Taxonomy.delete_tag: parents=#{parents}"
       #puts "Taxonomy.delete_tag: children=#{children}"
       #subtract_roots([tag])
       #subtract_folksonomies([tag])
-      puts "Taxonomy.delete_tag: parents|children=#{parents|children}"
+      #puts "Taxonomy.delete_tag: parents|children=#{parents|children}"
       update_status(parents|children)
       Debug.show(class:self.class,method:__method__,note:'2',vars:[['tags',tags],['roots',roots],['folks',folksonomy]])
     end
@@ -136,7 +136,7 @@ class Tag < PTag
   end
 
   def delete_parent(parent)
-    puts "Tag.delete_parent: self=#{self}, parent=#{parent}"
+    #puts "Tag.delete_parent: self=#{self}, parent=#{parent}"
     parent.delete_child(self)
   end
 
@@ -147,7 +147,7 @@ class Tag < PTag
   def empty_children; @children = [] end
 
   def get_ancestors(ancestors=[])
-    puts "Tag.get_ancestors: ancestors=#{ancestors}"
+    #puts "Tag.get_ancestors: ancestors=#{ancestors}"
     Debug.show(class:self.class,method:__method__,note:'1',vars:[['self',self],['ancestors',ancestors]])
     parnts = get_parents
     parnts.each {|parent| ancestors |= parent.get_ancestors(parnts)}
@@ -168,7 +168,7 @@ class Tag < PTag
   end
 
   def get_descendents(descendents=[])
-    puts "Tag.get_descendents: descendents=#{descendents}"
+    #puts "Tag.get_descendents: descendents=#{descendents}"
     childs = get_children
     childs.each {|child| descendents |= child.get_descendents(childs)}
     descendents
