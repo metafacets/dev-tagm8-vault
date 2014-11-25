@@ -586,4 +586,547 @@ describe 'Taxonomy' do
       end
     end
   end
+  context 'dag integrity' do
+    context 'prevent recursion (:a <-+-> :a)' do
+      [:dag_fix,:dag_prevent].each do |context|
+        context context do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.send(context)
+            @tax.add_tag(:a,:a)
+            @a =@tax.get_tag_by_name(:a)
+          end
+          it 'taxonomy has 1 tag' do expect(@tax.tag_count).to eq(1) end
+          it 'a has no parents' do expect(@a).to_not have_parent end
+          it 'a has no children' do expect(@a).to_not have_child end
+          it 'a is not root' do expect(@a).to_not be_root end
+          it 'a is folk' do expect(@a).to be_folk end
+        end
+      end
+    end
+    context 'prevent reflection (:a -> :b -+-> :a)' do
+      context ':dag_fix (:a -x-> :b -> :a)' do
+        before(:all) do
+          MongoMapper.connection.drop_database('tagm8')
+          @tax = Taxonomy.new
+          @tax.dag_fix
+          @tax.add_tag(:a,:b)
+          @tax.add_tag(:b,:a)
+          @a =@tax.get_tag_by_name(:a)
+          @b =@tax.get_tag_by_name(:b)
+        end
+        it 'taxonomy has 2 tags' do expect(@tax.tag_count).to eq(2) end
+        it 'roots has 1 tag' do expect(@tax.root_count).to eq(1) end
+        it 'folks is empty' do expect(@tax.folksonomy_count).to eq(0) end
+        it ':a has no parent' do expect(@a).to_not have_parent end
+        it ':a has child' do expect(@a).to have_child end
+        it ':b has parent' do expect(@b).to have_parent end
+        it ':b has no children' do expect(@b).to_not have_child end
+        it ':a is root' do expect(@a).to be_root end
+      end
+      context ':dag_prevent (:a -> :b -x-> :a)' do
+        before(:all) do
+          MongoMapper.connection.drop_database('tagm8')
+          @tax = Taxonomy.new
+          @tax.dag_prevent
+          @tax.add_tag(:a,:b)
+          @tax.add_tag(:b,:a)
+          @a =@tax.get_tag_by_name(:a)
+          @b =@tax.get_tag_by_name(:b)
+        end
+        it 'taxonomy has 2 tags' do expect(@tax.tag_count).to eq(2) end
+        it 'roots has 1 tag' do expect(@tax.root_count).to eq(1) end
+        it 'folks is empty' do expect(@tax.folksonomy_count).to eq(0) end
+        it 'b has no parent' do expect(@b).to_not have_parent end
+        it 'b has child' do expect(@b).to have_child end
+        it 'a has parent' do expect(@a).to have_parent end
+        it 'a has no children' do expect(@a).to_not have_child end
+        it 'b is root' do expect(@b).to be_root end
+      end
+    end
+    context 'prevent looping (:a -> :b -> :c -+-> :a)' do
+      context ':dag_fix (:a -x-> :b -> :c -> :a)' do
+        before(:all) do
+          MongoMapper.connection.drop_database('tagm8')
+          @tax = Taxonomy.new
+          @tax.dag_fix
+          @tax.add_tag(:a,:b)
+          @tax.add_tag(:b,:c)
+          @tax.add_tag(:c,:a)
+          @a =@tax.get_tag_by_name(:a)
+          @b =@tax.get_tag_by_name(:b)
+          @c =@tax.get_tag_by_name(:c)
+        end
+        it 'taxonomy has 3 tags' do expect(@tax.tag_count).to eq(3) end
+        it 'roots has 1 tag' do expect(@tax.root_count).to eq(1) end
+        it 'folks is empty' do expect(@tax.folksonomy_count).to eq(0) end
+        it 'a has no parent' do expect(@a).to_not have_parent end
+        it 'a has child' do expect(@a).to have_child end
+        it 'c has parent' do expect(@c).to have_parent end
+        it 'c has child' do expect(@c).to have_child end
+        it 'b has parent' do expect(@b).to have_parent end
+        it 'b has no child' do expect(@b).to_not have_child end
+        it 'a is root' do expect(@a).to be_root end
+      end
+      context ':dag_prevent (:a -> :b -> :c -x-> :a)' do
+        before(:all) do
+          MongoMapper.connection.drop_database('tagm8')
+          @tax = Taxonomy.new
+          @tax.dag_prevent
+          @tax.add_tag(:a,:b)
+          @tax.add_tag(:b,:c)
+          @tax.add_tag(:c,:a)
+          @a =@tax.get_tag_by_name(:a)
+          @b =@tax.get_tag_by_name(:b)
+          @c =@tax.get_tag_by_name(:c)
+        end
+        it 'taxonomy has 3 tags' do expect(@tax.tag_count).to eq(3) end
+        it 'roots has 1 tag' do expect(@tax.root_count).to eq(1) end
+        it 'folks is empty' do expect(@tax.folksonomy_count).to eq(0) end
+        it 'c has no parent' do expect(@c).to_not have_parent end
+        it 'c has child' do expect(@c).to have_child end
+        it 'b has parent' do expect(@b).to have_parent end
+        it 'b has child' do expect(@b).to have_child end
+        it 'a has parent' do expect(@a).to have_parent end
+        it 'a has no child' do expect(@a).to_not have_child end
+        it 'c is root' do expect(@c).to be_root end
+      end
+    end
+    context 'prevent selective looping (:b2 <- :a -> :b1 -> :c1 -+-> :a)' do
+      context ':dag_fix (:a -x-> :b1 -> :c1 -> :a -> :b2)' do
+        before(:all) do
+          MongoMapper.connection.drop_database('tagm8')
+          @tax = Taxonomy.new
+          @tax.dag_fix
+          @tax.add_tag(:a,:b1)
+          @tax.add_tag(:a,:b2)
+          @tax.add_tag(:b1,:c1)
+          @tax.add_tag(:c1,:a)
+          @a =@tax.get_tag_by_name(:a)
+          @b1 =@tax.get_tag_by_name(:b1)
+          @b2 =@tax.get_tag_by_name(:b2)
+          @c1 =@tax.get_tag_by_name(:c1)
+        end
+        it 'taxonomy has 4 tags' do expect(@tax.tag_count).to eq(4) end
+        it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+        it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+        it ':b2 has no parent' do expect(@b2).to_not have_parent end
+        it ':b2 has child' do expect(@b2).to have_child end
+        it ':a has parent' do expect(@a).to have_parent end
+        it ':a has child' do expect(@a).to have_child end
+        it ':c1 has parent' do expect(@c1).to have_parent end
+        it ':c1 has child' do expect(@c1).to have_child end
+        it ':b1 has parent' do expect(@b1).to have_parent end
+        it ':b1 has no child' do expect(@b1).to_not have_child end
+        it ':b2 is root' do expect(@b2).to be_root end
+      end
+      context ':dag_prevent (b2 <- :a -> :b1 -> :c1)' do
+        before(:all) do
+          MongoMapper.connection.drop_database('tagm8')
+          @tax = Taxonomy.new
+          @tax.dag_prevent
+          @tax.add_tag(:a,:b1)
+          @tax.add_tag(:a,:b2)
+          @tax.add_tag(:b1,:c1)
+          @tax.add_tag(:c1,:a)
+          @a =@tax.get_tag_by_name(:a)
+          @b1 =@tax.get_tag_by_name(:b1)
+          @b2 =@tax.get_tag_by_name(:b2)
+          @c1 =@tax.get_tag_by_name(:c1)
+        end
+        it 'taxonomy has 4 tags' do expect(@tax.tag_count).to eq(4) end
+        it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
+        it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+        it ':b2 has no parent' do expect(@b2).to_not have_parent end
+        it ':b2 has child' do expect(@b2).to have_child end
+        it ':a has parent' do expect(@a).to have_parent end
+        it ':a has no child' do expect(@a).to_not have_child end
+        it ':b1 has parent' do expect(@b1).to have_parent end
+        it ':b1 has child' do expect(@b1).to have_child end
+        it ':c1 has no parent' do expect(@c1).to_not have_parent end
+        it ':c1 has child' do expect(@c1).to have_child end
+        it ':b2 is root' do expect(@b2).to be_root end
+        it ':c1 is root' do expect(@c1).to be_root end
+      end
+    end
+  end
+  describe :instantiate do
+    describe 'tag_ddl errors' do
+      [[:a],:a].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+          end
+          it 'taxonomy empty' do expect(@tax.tag_count).to eq(0) end
+          it 'roots empty' do expect(@tax.root_count).to eq(0) end
+          it 'folk empty' do expect(@tax.folksonomy_count).to eq(0) end
+        end
+      end
+    end
+    describe 'single tag' do
+      ['[:a]',':a'].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+            @a =@tax.get_tag_by_name(:a)
+          end
+          it 'taxonomy has 1 tag' do expect(@tax.tag_count).to eq(1) end
+          it 'has no roots' do expect(@tax.root_count).to eq(0) end
+          it 'has 1 folk' do expect(@tax.folksonomy_count).to eq(1) end
+          it ':a is folk' do expect(@a).to be_folk end
+        end
+      end
+    end
+    describe 'discrete pair' do
+      ['[:a,:b]',':a,:b'].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+            @a =@tax.get_tag_by_name(:a)
+            @b =@tax.get_tag_by_name(:b)
+          end
+          it 'taxonomy has 2 tags' do expect(@tax.tag_count).to eq(2) end
+          it 'has no roots' do expect(@tax.root_count).to eq(0) end
+          it 'has 2 folk' do expect(@tax.folksonomy_count).to eq(2) end
+          it ':a is folk' do expect(@a).to be_folk end
+          it ':b is folk' do expect(@b).to be_folk end
+        end
+      end
+    end
+    describe 'discrete pair errors' do
+      ['a,b',':a:b',':a::b',':a,,:b','a::b','::a,,b'].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+            @a =@tax.get_tag_by_name(:a)
+            @b =@tax.get_tag_by_name(:b)
+          end
+          it 'taxonomy has 2 tags' do expect(@tax.tag_count).to eq(2) end
+          it 'has no roots' do expect(@tax.root_count).to eq(0) end
+          it 'has 2 folk' do expect(@tax.folksonomy_count).to eq(2) end
+          it ':a is folk' do expect(@a).to be_folk end
+          it ':b is folk' do expect(@b).to be_folk end
+        end
+      end
+    end
+    describe 'hierarchy pair' do
+      ['[:a>:b]',':a>:b','[:b<:a]',':b<:a'].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+            @a =@tax.get_tag_by_name(:a)
+            @b =@tax.get_tag_by_name(:b)
+          end
+          it 'taxonomy has 2 tags' do expect(@tax.tag_count).to eq(2) end
+          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it ':a is root' do expect(@a).to be_root end
+          it ':a has no parent' do expect(@a).to_not have_parent end
+          it ':a has child' do expect(@a).to have_child end
+          it ':b has parent' do expect(@b).to have_parent end
+          it ':b has no child' do expect(@b).to_not have_child end
+        end
+      end
+    end
+    describe 'hierarchy pair errors' do
+      ['[:a>b]','a>b','a>::b','[:b<<:a]',':b<<::a'].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+            @a =@tax.get_tag_by_name(:a)
+            @b =@tax.get_tag_by_name(:b)
+          end
+          it 'taxonomy has 2 tags' do expect(@tax.tag_count).to eq(2) end
+          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it ':a is root' do expect(@a).to be_root end
+          it ':a has no parent' do expect(@a).to_not have_parent end
+          it ':a has child' do expect(@a).to have_child end
+          it ':b has parent' do expect(@b).to have_parent end
+          it ':b has no child' do expect(@b).to_not have_child end
+        end
+      end
+    end
+    describe 'various syntax failures' do
+      [':b<><<:a'].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+          end
+          it 'taxonomy empty' do expect(@tax.tag_count).to eq(0) end
+        end
+      end
+    end
+    describe 'discrete and hierarchy pairs combined' do
+      ['[[:a,:b]>:c]','[:a,:b]>:c','[:c<[:a,:b]]',':c<[:a,:b]'].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+            @a =@tax.get_tag_by_name(:a)
+            @b =@tax.get_tag_by_name(:b)
+            @c =@tax.get_tag_by_name(:c)
+          end
+          it 'taxonomy has 3 tags' do expect(@tax.tag_count).to eq(3) end
+          it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
+          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it ':a is root' do expect(@a).to be_root end
+          it ':b is root' do expect(@b).to be_root end
+          it ':a has no parent' do expect(@a).to_not have_parent end
+          it ':a has child' do expect(@a).to have_child end
+          it ':b has no parent' do expect(@b).to_not have_parent end
+          it ':b has child' do expect(@b).to have_child end
+          it ':c has parent' do expect(@c).to have_parent end
+          it ':c has no child' do expect(@c).to_not have_child end
+        end
+      end
+      ['[:a>[:b,:c]]',':a>[:b,:c]','[[:b,:c]<:a]','[:b,:c]<:a'].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+            @a =@tax.get_tag_by_name(:a)
+            @b =@tax.get_tag_by_name(:b)
+            @c =@tax.get_tag_by_name(:c)
+          end
+          it 'taxonomy has 3 tags' do expect(@tax.tag_count).to eq(3) end
+          it 'has 1 roots' do expect(@tax.root_count).to eq(1) end
+          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it ':a is root' do expect(@a).to be_root end
+          it ':a has no parent' do expect(@a).to_not have_parent end
+          it ':a has child' do expect(@a).to have_child end
+          it ':b has parent' do expect(@b).to have_parent end
+          it ':b has no child' do expect(@b).to_not have_child end
+          it ':c has parent' do expect(@c).to have_parent end
+          it ':c has no child' do expect(@c).to_not have_child end
+        end
+      end
+      ['[[:a1,:a2]>[:b1,:b2]]','[:a1,:a2]>[:b1,:b2]','[[:b1,:b2]<[:a1,:a2]]','[:b1,:b2]<[:a1,:a2]'].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+            @a1 =@tax.get_tag_by_name(:a1)
+            @a2 =@tax.get_tag_by_name(:a2)
+            @b1 =@tax.get_tag_by_name(:b1)
+            @b2 =@tax.get_tag_by_name(:b2)
+          end
+          it 'taxonomy has 4 tags' do expect(@tax.tag_count).to eq(4) end
+          it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
+          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it ':a1 is root' do expect(@a1).to be_root end
+          it ':a2 is root' do expect(@a2).to be_root end
+          it ':a1 has no parent' do expect(@a1).to_not have_parent end
+          it ':a1 has child' do expect(@a1).to have_child end
+          it ':a2 has no parent' do expect(@a2).to_not have_parent end
+          it ':a2 has child' do expect(@a2).to have_child end
+          it ':b1 has parent' do expect(@b1).to have_parent end
+          it ':b1 has no child' do expect(@b1).to_not have_child end
+          it ':b2 has parent' do expect(@b2).to have_parent end
+          it ':b2 has no child' do expect(@b2).to_not have_child end
+        end
+      end
+    end
+    describe 'hierarchy triple' do
+      ['[:a>:b>:c]',':a>:b>:c','[:c<:b<:a]',':c<:b<:a'].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+            @a =@tax.get_tag_by_name(:a)
+            @b =@tax.get_tag_by_name(:b)
+            @c =@tax.get_tag_by_name(:c)
+          end
+          it 'taxonomy has 3 tags' do expect(@tax.tag_count).to eq(3) end
+          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it ':a is root' do expect(@a).to be_root end
+          it ':a has no parent' do expect(@a).to_not have_parent end
+          it ':a has child' do expect(@a).to have_child end
+          it ':b has parent' do expect(@b).to have_parent end
+          it ':b has child' do expect(@b).to have_child end
+          it ':c has parent' do expect(@c).to have_parent end
+          it ':c has no child' do expect(@c).to_not have_child end
+        end
+      end
+    end
+    describe 'hierarchy triple and discrete pair combined' do
+      ['[[:a1,:a2]>:b>[:c1,:c2]]','[:a1,:a2]>:b>[:c1,:c2]','[[:c1,:c2]<:b<[:a1,:a2]]','[:c1,:c2]<:b<[:a1,:a2]'].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+            @a1 =@tax.get_tag_by_name(:a1)
+            @a2 =@tax.get_tag_by_name(:a2)
+            @b =@tax.get_tag_by_name(:b)
+            @c1 =@tax.get_tag_by_name(:c1)
+            @c2 =@tax.get_tag_by_name(:c2)
+          end
+          it 'taxonomy has 5 tags' do expect(@tax.tag_count).to eq(5) end
+          it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
+          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it ':a1 is root' do expect(@a1).to be_root end
+          it ':a2 is root' do expect(@a2).to be_root end
+          it ':a1 has no parent' do expect(@a1).to_not have_parent end
+          it ':a1 has child' do expect(@a1).to have_child end
+          it ':a2 has no parent' do expect(@a2).to_not have_parent end
+          it ':a2 has child' do expect(@a2).to have_child end
+          it ':b has parent' do expect(@b).to have_parent end
+          it ':b has child' do expect(@b).to have_child end
+          it ':c1 has parent' do expect(@c1).to have_parent end
+          it ':c1 has no child' do expect(@c1).to_not have_child end
+          it ':c2 has parent' do expect(@c2).to have_parent end
+          it ':c2 has no child' do expect(@c2).to_not have_child end
+        end
+      end
+    end
+    describe 'siblings nest hierarchy' do
+      [':a>[:b1,:b2>[:c21,:c22],:b3]',':a>[:b2>[:c21,:c22],:b1,:b3]',':a>[:b1,:b3,:b2>[:c21,:c22]]','[:b1,[:c21,:c22]<:b2,:b3]<:a','[[:c21,:c22]<:b2,:b1,:b3]<:a','[:b1,:b3,[:c21,:c22]<:b2]<:a'].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+            @a =@tax.get_tag_by_name(:a)
+            @b1 =@tax.get_tag_by_name(:b1)
+            @b2 =@tax.get_tag_by_name(:b2)
+            @b3 = @tax.get_tag_by_name(:b3)
+            @c21 = @tax.get_tag_by_name(:c21)
+            @c22 = @tax.get_tag_by_name(:c22)
+          end
+          it 'taxonomy has 6 tags' do expect(@tax.tag_count).to eq(6) end
+          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it ':a is root' do expect(@a).to be_root end
+          it ':a has no parent' do expect(@a).to_not have_parent end
+          it ':a has 3 children' do expect(@a.children.size).to eq(3) end
+          it ':b1 has 1 parent' do expect(@b1.parents.size).to eq(1) end
+          it ':b2 has 1 parent' do expect(@b2.parents.size).to eq(1) end
+          it ':b3 has 1 parent' do expect(@b3.parents.size).to eq(1) end
+          it ':b1 has no child' do expect(@b1).to_not have_child end
+          it ':b2 has 2 children' do expect(@b2.children.size).to eq(2) end
+          it ':b3 has no child' do expect(@b3).to_not have_child end
+          it ':c21 has parent' do expect(@c21).to have_parent end
+          it ':c21 has no child' do expect(@c21).to_not have_child end
+          it ':c22 has parent' do expect(@c22).to have_parent end
+          it ':c22 has no child' do expect(@c22).to_not have_child end
+        end
+      end
+    end
+    describe 'siblings nest mixed hierarchy' do
+      [':a>[:b1,[:c21,:c22]<:b2,:b3]','[:b1,:b2>[:c21,:c22],:b3]<:a',':a>[[:c21,:c22]<:b2,:b1,:b3]','[:b2>[:c21,:c22],:b1,:b3]<:a',':a>[:b1,:b3,[:c21,:c22]<:b2]','[:b1,:b3,:b2>[:c21,:c22]]<:a'].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+            @a =@tax.get_tag_by_name(:a)
+            @b1 =@tax.get_tag_by_name(:b1)
+            @b2 =@tax.get_tag_by_name(:b2)
+            @b3 = @tax.get_tag_by_name(:b3)
+            @c21 = @tax.get_tag_by_name(:c21)
+            @c22 = @tax.get_tag_by_name(:c22)
+          end
+          it 'taxonomy has 6 tags' do expect(@tax.tag_count).to eq(6) end
+          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it ':a is root' do expect(@a).to be_root end
+          it ':a has no parent' do expect(@a).to_not have_parent end
+          it ':a has 3 children' do expect(@a.children.size).to eq(3) end
+          it ':b1 has 1 parent' do expect(@b1.parents.size).to eq(1) end
+          it ':b2 has 1 parent' do expect(@b2.parents.size).to eq(1) end
+          it ':b3 has 1 parent' do expect(@b3.parents.size).to eq(1) end
+          it ':b1 has no child' do expect(@b1).to_not have_child end
+          it ':b2 has 2 children' do expect(@b2.children.size).to eq(2) end
+          it ':b3 has no child' do expect(@b3).to_not have_child end
+          it ':c21 has parent' do expect(@c21).to have_parent end
+          it ':c21 has no child' do expect(@c21).to_not have_child end
+          it ':c22 has parent' do expect(@c22).to have_parent end
+          it ':c22 has no child' do expect(@c22).to_not have_child end
+        end
+      end
+    end
+    describe 'double nested hierarchy with siblings' do
+      ['[[:carp,:herring]<:fish,:insect]<:animal','[:insect,[:carp,:herring]<:fish]<:animal',':animal>[:insect,:fish>[:carp,:herring]]',':animal>[:fish>[:carp,:herring],:insect]'].each do |ddl|
+        describe ddl do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = Taxonomy.new
+            @tax.dag_prevent
+            @tax.instantiate(ddl)
+            @animal = @tax.get_tag_by_name(:animal)
+            @fish = @tax.get_tag_by_name(:fish)
+            @insect = @tax.get_tag_by_name(:insect)
+            @carp = @tax.get_tag_by_name(:carp)
+            @herring = @tax.get_tag_by_name(:herring)
+          end
+          it 'taxonomy has 5 tags' do expect(@tax.tag_count).to eq(5) end
+          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it ':animal is root' do expect(@animal).to be_root end
+          it ':animal has no parent' do expect(@animal).to_not have_parent end
+          it ':animal has 2 children' do expect(@animal.children.size).to eq(2) end
+          it ':fish has 1 parent' do expect(@fish.parents.size).to eq(1) end
+          it ':fish has 2 children' do expect(@fish.children.size).to eq(2) end
+          it ':insect has 1 parent' do expect(@insect.parents.size).to eq(1) end
+          it ':insect has no child' do expect(@insect).to_not have_child end
+          it ':carp has 1 parent' do expect(@carp.parents.size).to eq(1) end
+          it ':carp has no child' do expect(@carp).to_not have_child end
+          it ':herring has 1 parent' do expect(@herring.parents.size).to eq(1) end
+          it ':herring has no child' do expect(@herring).to_not have_child end
+        end
+      end
+    end
+    describe 'animal_taxonomy' do
+      ['add_tags','instantiate'].each do |method|
+        describe "#{method}" do
+          before(:all) do
+            MongoMapper.connection.drop_database('tagm8')
+            @tax = animal_taxonomy(method=='instantiate')
+            @animal = @tax.get_tag_by_name(:animal)
+            @food = @tax.get_tag_by_name(:food)
+          end
+          it 'taxonomy has 11 tags' do expect(@tax.tag_count).to eq(11) end
+          it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
+          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it ':animal is root' do expect(@animal).to be_root end
+          it ':food is root' do expect(@food).to be_root end
+        end
+      end
+    end
+  end
 end
