@@ -11,12 +11,14 @@ class Taxonomy < PTaxonomy
   def initialize(name='taxonomy')
     super(name:name)
     empty
+    save
   end
 
   def empty?; !has_tag? && !has_root? && !has_folksonomy? end
 
   def empty
     dag_prevent
+    save
   end
 
   def dag=(dag=false)
@@ -33,36 +35,38 @@ class Taxonomy < PTaxonomy
   def dag?; !!dag end
   def dag_prevent?; dag == 'prevent' end
   def dag_fix?; dag == 'fix' end
-  def tags; @tags end
-  def get_tag(name) tags[name] end
-
-  def has_tag?(name=nil)
-    if name.nil?
-      !tags.empty?
-    else
-      tags.all(:name => name).empty?
-    end
-  end
 
   def delete_tag(name)
     if has_tag?(name)
-      tag = get_tag(name)
-      parents = tag.parents
-      children = tag.children
+      puts "Taxonomy.delete_tag: name=#{name}"
+      tag = get_tag_by_name(name)
+      puts "Taxonomy.delete_tag: tag=#{tag}"
+      parents = tag.get_parents
+      children = tag.get_children
+      puts "Taxonomy.delete_tag: parents=#{parents}, children=#{children}"
       Debug.show(class:self.class,method:__method__,note:'1',vars:[['tag',tag],['parents',parents],['children',children]])
       Debug.show(class:self.class,method:__method__,note:'1',vars:[['tags',tags],['roots',roots],['folks',folksonomy]])
       parents.each do |parent|
-        parent.children -= [tag]
-        parent.children |= children
+        #parent.children -= [tag]
+        parent.pull(children:tag._id.to_s)
+        #parent.children |= children
+        children.each{|child| parent.add_to_set(children:child._id.to_s)}
       end
       children.each do |child|
-        child.parents -= [tag]
-        child.parents |= parents
+        #child.parents -= [tag]
+        child.pull(parents:tag._id.to_s)
+        #child.parents |= parents
+        parents.each{|parent| child.add_to_set(parents:parent._id.to_s)}
       end
       tag.items.each {|item| item.tags -= [tag]}
+      puts "Taxonomy.delete_tag: tag_count=#{tag_count}, tags=#{tags}"
       subtract_tags([tag])
-      subtract_roots([tag])
-      subtract_folksonomy([tag])
+      puts "Taxonomy.delete_tag: tag_count=#{tag_count}, tags=#{tags}"
+      #puts "Taxonomy.delete_tag: parents=#{parents}"
+      #puts "Taxonomy.delete_tag: children=#{children}"
+      #subtract_roots([tag])
+      #subtract_folksonomies([tag])
+      puts "Taxonomy.delete_tag: parents|children=#{parents|children}"
       update_status(parents|children)
       Debug.show(class:self.class,method:__method__,note:'2',vars:[['tags',tags],['roots',roots],['folks',folksonomy]])
     end
@@ -113,134 +117,40 @@ class Taxonomy < PTaxonomy
       when node.class == 'Tag'
         node
       when has_tag?(node)
-        get_tag(node)
+        get_tag_by_name(node)
       else
         Tag.new(node,self)
     end
   end
 
-  def subtract_tags(tags_to_delete)
-    tags_to_delete.each {|tag| tags.delete(tag.name.to_sym)}
-  end
+  # def roots; @roots end
 
-  def roots; @roots end
+  # def folksonomy; @folksonomy end
 
-  def has_root?(tag=nil)
-    if tag.nil?
-      !tags.all(is_root:true).empty?
-    else
-      !tags.all(is_root:true,_id:tag.id).empty?
-    end
-  end
-
-  def add_roots(tags) @roots |= tags.to_a end
-
-  def subtract_roots(tags) @roots -= tags.to_a end
-
-  def folksonomy; @folksonomy end
-
-  def has_folksonomy?(tag=nil)
-    if tag.nil?
-      !tags.all(is_folk:true).empty?
-    else
-      !tags.all(is_folk:true,_id:tag.id).empty?
-    end
-  end
-
-  def add_folksonomy(tags) @folksonomy |= tags.to_a end
-
-  def subtract_folksonomy(tags) @folksonomy -= tags.to_a end
-
-  def update_status(tags)
-    this_status = lambda {|tag|
-      if tag.has_parent?
-        subtract_roots([tag])
-        subtract_folksonomy([tag])
-      else
-        if tag.has_child?
-          add_roots([tag])
-          subtract_folksonomy([tag])
-        else
-          add_folksonomy([tag])
-          subtract_roots([tag])
-        end
-      end
-    }
-    tags.each {|tag| this_status.call(tag)}
-  end
-
-  def link(children,parents,status=true)
-    link_children = lambda {|children,parent|
-      children -= [parent]
-      unless children.empty?
-        ctags = children.clone
-        ancestors = parent.get_ancestors if dag?
-        children.each do |child|
-          Debug.show(class:self.class,method:__method__,note:'1',vars:[['name',child.name],['parent',name]])
-          if dag? && ancestors.include?(child)
-            if dag_prevent?
-              ctags -= [child]
-            else
-              (parent.parents & child.get_descendents+[child]).each {|grand_parent| parent.delete_parent(grand_parent)}
-              child.parents |= [parent]
-            end
-          else
-            child.parents |= [parent]
-          end
-        end
-        parent.children |= ctags
-      end
-    }
-    parents = parents.uniq
-    children = children.uniq
-    parents.each {|parent| link_children.call(children,parent)}
-    update_status(parents|children) if status
-  end
 end
 
 class Tag < PTag
-  def initialize(name,taxonomy)
-    super(name:name,taxonomy:taxonomy,is_root:false, is_folk:true)
-#    @parents = []
-#    @children = []
-#    @items = []     # to be supported
+  def initialize(name,tax)
+    super(name:name,is_root:false,is_folk:true,taxonomy:tax._id)
+    save
   end
 
-  def has_parent?(tag=nil)
-    if tag.nil?
-      !parents.to_a.empty?
-    else
-      parents.include?(tag._id)
-    end
+  def delete_parent(parent)
+    puts "Tag.delete_parent: self=#{self}, parent=#{parent}"
+    parent.delete_child(self)
   end
 
-  def delete_parent(parent) parent.delete_child(self) end
-
-  def add_parents(parents); Tag.link([self],parents) end
-
-  def has_child?(tag=nil)
-    if tag.nil?
-      !children.to_a.empty?
-    else
-      children.include?(tag._id)
-    end
-  end
-
-  def delete_child(child)
-    if has_child?(child)
-      children.delete(child)
-      child.parents.delete(self)
-      taxonomy.update_status([self,child])
-    end
-  end
+  def add_parents(parents); taxonomy.link([self],parents) end
 
   def add_children(children); taxonomy.link(children,[self]) end
 
   def empty_children; @children = [] end
 
   def get_ancestors(ancestors=[])
+    puts "Tag.get_ancestors: ancestors=#{ancestors}"
     Debug.show(class:self.class,method:__method__,note:'1',vars:[['self',self],['ancestors',ancestors]])
-    parents.each {|parent| ancestors |= parent.get_ancestors(parents)}
+    parnts = get_parents
+    parnts.each {|parent| ancestors |= parent.get_ancestors(parnts)}
     Debug.show(class:self.class,method:__method__,note:'2',vars:[['ancestors',ancestors]])
     ancestors
   end
@@ -258,7 +168,9 @@ class Tag < PTag
   end
 
   def get_descendents(descendents=[])
-    children.each {|child| descendents |= child.get_descendents(children)}
+    puts "Tag.get_descendents: descendents=#{descendents}"
+    childs = get_children
+    childs.each {|child| descendents |= child.get_descendents(childs)}
     descendents
   end
 
@@ -266,7 +178,7 @@ class Tag < PTag
     descendents = get_descendents
     taxonomy.subtract_tags(descendents)
     taxonomy.subtract_roots(descendents)
-    taxonomy.subtract_folksonomy(descendents)
+    taxonomy.subtract_folksonomies(descendents)
     empty_children
   end
 
@@ -291,13 +203,9 @@ class Tag < PTag
   end
 
   def inspect
-    pretty_link = lambda {|method|
-      a_p = []
-      send(method).each {|tag| a_p += [tag.name] }
-      '['+a_p.join(', ')+']'
-    }
     items.empty? ? pretty_items = '' : pretty_items = ", items=#{items.map {|item| item.name}}"
-    "Tag<name=#{name}, parents=#{pretty_link.call(:parents)}, children=#{pretty_link.call(:children)}#{pretty_items}>"
+    #"Tag<_id=#{_id}, name=#{name}, tax=#{taxonomy}, parents=#{get_taxonomy.get_names_by_id(parents)}, children=#{get_taxonomy.get_names_by_id(children)}#{pretty_items}>"
+    "Tag<#{name}: parents=#{get_taxonomy.get_names_by_id(parents)}, children=#{get_taxonomy.get_names_by_id(children)}#{pretty_items}>"
   end
   def to_s; inspect end
 
