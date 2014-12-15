@@ -1,0 +1,292 @@
+require_relative 'debug'
+require_relative 'ddl'
+require_relative 'query'
+require_relative '../../src/model/mongo_mapper-db_2_odm-high'
+
+#Debug.new(class:'Tag') # comment out to turn off
+#Debug.new(method:'abstract')
+
+class Taxonomy < PTaxonomy
+  def initialize(name='taxonomy')
+    super(name:name,dag:'prevent')
+    save
+  end
+
+  def empty?; !has_tag? && !has_root? && !has_folksonomy? end
+
+  def dag_fix; self.dag = 'fix'; save; end
+  def dag_prevent; self.dag = 'prevent'; save; end
+  def dag_free; self.dag = 'false'; save; end
+  def dag?; self.dag != 'false' end
+  def dag_prevent?; self.dag == 'prevent' end
+  def dag_fix?; self.dag == 'fix' end
+
+  def delete_tag(name)
+    if has_tag?(name)
+      tag = get_tag_by_name(name)
+      parents = tag.parents
+      children = tag.children
+      Debug.show(class:self.class,method:__method__,note:'1',vars:[['tag',tag],['parents',parents],['children',children]])
+      Debug.show(class:self.class,method:__method__,note:'1',vars:[['tags',tags],['roots',roots],['folks',folksonomy]])
+      parents.each do |parent|
+        parent.children -= [tag]
+        parent.children |= children
+        parent.save
+      end
+      children.each do |child|
+        child.parents -= [tag]
+        child.parents |= parents
+        child.save
+      end
+      tag.items.each {|item| item.tags -= [tag]; item.save; }
+      subtract_tags([tag])
+      update_status(parents|children)
+      Debug.show(class:self.class,method:__method__,note:'2',vars:[['tags',tags],['roots',roots],['folks',folksonomy]])
+    end
+  end
+
+  def instantiate(tag_ddl)
+    leaves = []
+    Ddl.parse(tag_ddl)
+    if Ddl.has_tags?
+      tags = Ddl.tags.map {|name| get_lazy_tag(name)}
+      leaves = Ddl.leaves.map {|name| get_lazy_tag(name)}
+      Ddl.links.each do |pair|
+        [0,1].each do |i|
+          pair[i] = pair[i].map {|name| get_lazy_tag(name)}
+        end
+        link(pair[0],pair[1],false)
+      end
+      update_status(tags)
+    end
+    leaves
+  end
+
+  def deprecate(tag_ddl)
+    Ddl.parse(tag_ddl)
+    tags = Ddl.tags.map {|name| get_lazy_tag(name)}
+    Ddl.tags.each {|name| delete_tag(name)} if Ddl.has_tags?
+    tags
+  end
+
+  def query_items(query)
+    Query.taxonomy = self
+    begin
+      eval(Query.parse(query))
+    rescue SyntaxError
+      []
+    end
+  end
+
+  def has_tag?(name=nil) tag_count(name) > 0 end
+
+  def add_tags(names_children, name_parent=nil)
+    puts "Tag.add_tags 1: tags=#{tags}"
+    children = names_children.map {|name| get_lazy_tag(name)}.uniq
+    link(children,[get_lazy_tag(name_parent)]) unless name_parent.nil?
+    puts "Tag.add_tags 2: tags=#{tags}"
+  end
+
+  def add_tag(name, name_parent=nil) add_tags([name],name_parent) end
+
+  def get_lazy_tag(node)
+#    puts "Taxonomy.get_lazy_tag 1: node=#{node}"
+    tag = case
+      when node.class == 'Tag'
+        node
+      when has_tag?(node)
+        get_tag_by_name(node)
+      else
+        Tag.new(node,self)
+          end
+#    puts "Taxonomy.get_lazy_tag 2: tag=#{tag}"
+    tag
+  end
+
+  def update_status(tags)
+    this_status = lambda {|tag|
+      #puts "PTaxonomy.update_status: tag=#{tag}, tag.has_parent?=#{tag.has_parent?}, tag.has_child?=#{tag.has_child?}"
+      if tag.has_parent?
+        tag.register_offspring
+      else
+        if tag.has_child?
+          tag.register_root
+        else
+          tag.register_folksonomy
+        end
+      end
+    }
+    tags.each {|tag| this_status.call(tag)}
+  end
+
+  def link(children,parents,status=true)
+    link_children = lambda {|children,parent|
+      puts "Taxonomy.link.link_children 1: parent=#{parent}, dag=#{dag}"
+      children -= [parent]
+      unless children.empty?
+        ctags = children.clone
+        ancestors = parent.get_ancestors if dag?
+        children.each do |child|
+          Debug.show(class:self.class,method:__method__,note:'1',vars:[['name',child.name],['parent',name]])
+          puts "PTaxonomy.link.link_children 2: child=#{child}, ancestors=#{ancestors}"
+          if dag? && ancestors.include?(child)
+            puts "PTaxonomy.link.link_children 3: dag_prevent?=#{dag_prevent?}"
+            if dag_prevent?
+              ctags -= [child]
+            else
+              (parent.parents & child.get_descendents+[child]).each {|grand_parent| parent.delete_parent(grand_parent); puts "PTaxonomy.link.link_children 4: parent=#{parent}, grand_parent=#{grand_parent}";}
+              child.parents |= [parent]
+              child.save
+            end
+          else
+            child.parents |= [parent]
+            child.save
+          end
+        end
+        parent.children |= ctags
+        parent.save
+      end
+      puts "PTaxonomy.link.link_children 5: parent?=#{parent}"
+    }
+#    puts "Taxonomy.link 1:"
+    parents = parents.uniq
+    children = children.uniq
+#    puts "Taxonomy.link 2:"
+    puts "Taxonomy.link: parents=#{parents}, children=#{children}"
+    parents.each {|parent| link_children.call(children,parent)}
+    save
+    update_status(parents|children) if status
+  end
+
+  def add_album(name)
+    Album.new(name:name,taxonomy:self._id)
+  end
+
+end
+
+class Tag < PTag
+
+#  attr_accessor :name, :parents, :children, :taxonomy, :items, :is_root, :is_folk
+
+  def initialize(name,taxonomy)
+    super(name:name,is_root:false,is_folk:true,taxonomy:taxonomy)
+    save
+    taxonomy.tags |= [self]
+    taxonomy.save
+  end
+
+  def has_parent?(tag=nil)
+    if tag.nil?
+      !parents.to_a.empty?
+    else
+      parents.include?(tag)
+    end
+  end
+
+  def delete_parent(parent)
+    parent.delete_child(self)
+#    puts "Tag.delete_parent: self=#{self}, child=#{parent}"
+  end
+
+  def add_parents(parents); Tag.link([self],parents) end
+
+  def has_child?(tag=nil)
+    if tag.nil?
+      !children.to_a.empty?
+    else
+      children.include?(tag)
+    end
+  end
+
+  def delete_child(child)
+    puts "Tag.delete_child 1: self=#{self}, child=#{child}"
+    if has_child?(child)
+      children.delete(child)
+      save
+      child.parents.delete(self)
+      child.save
+#      taxonomy.tags.delete(child)
+#      taxonomy.tags.delete(self)
+#      taxonomy.tags |= [self,child]
+      taxonomy.save
+      taxonomy.update_status([self,child])
+    end
+    puts "Tag.delete_child 2: self=#{self}, child=#{child}"
+    puts "Tag.delete_child 2: taxonomy.tags.include?(child)=#{taxonomy.tags.include?(child)}, taxonomy.tags=#{taxonomy.tags}"
+  end
+
+  def add_children(children); taxonomy.link(children,[self]) end
+
+  def empty_children; self.children = [] end
+
+#  def items; self.items end
+
+#  def items=(items) self.items = items end
+
+  def get_ancestors(ancestors=[])
+    puts "Tag.get_ancestors 1: self=#{self}"
+    puts "Tag.get_ancestors 1: ancestors=#{ancestors}"
+    Debug.show(class:self.class,method:__method__,note:'1',vars:[['self',self],['ancestors',ancestors]])
+    parents.each {|parent| ancestors |= parent.get_ancestors(parents)}
+    Debug.show(class:self.class,method:__method__,note:'2',vars:[['ancestors',ancestors]])
+    ancestors
+  end
+
+  def get_depth(root,branch)
+    # walks up branch from self to root returning depth
+    # dag support requirs nodes outside branch are ignored
+    if parents.include?(root)
+      depth = 1
+    else
+      parent = (parents & branch).pop
+      parent.nil? ? depth = 0 : depth = parent.get_depth(root,branch) + 1
+    end
+    depth
+  end
+
+  def get_descendents(descendents=[])
+    children.each {|child| descendents |= child.get_descendents(children)}
+    descendents
+  end
+
+  def delete_descendents
+    descendents = get_descendents
+    taxonomy.subtract_tags(descendents)
+    taxonomy.subtract_roots(descendents)
+    taxonomy.subtract_folksonomy(descendents)
+    empty_children
+  end
+
+  def add_descendents(children) add_children(children) end
+
+  def delete_branch
+    # delete self and its descendents
+    delete_descendents
+    parent.delete_child(self)
+    taxonomy.subtract_tags([self])
+  end
+
+  def add_branch(tag)
+    # if self is root add tag as new root else add tag as sibling of self
+  end
+
+  def query_items
+    # queries items matching this tag
+    result = items
+    get_descendents.each {|desc| result |= desc.items}
+    result
+  end
+
+  def inspect
+    items.empty? ? pretty_items = '' : pretty_items = ", items=#{items.map {|item| item.name}}"
+    #"Tag<_id=#{_id}, name=#{name}, tax=#{taxonomy}, parents=#{taxonomy.get_names_by_id(parents)}, children=#{taxonomy.get_names_by_id(children)}#{pretty_items}>"
+    #"Tag<#{name}: parents=#{taxonomy.get_names_by_id(parents)}, children=#{taxonomy.get_names_by_id(children)}#{pretty_items}>"
+    "Tag<#{name}: _id=#{_id}, parents=#{get_parents_names}, children=#{get_children_names}#{pretty_items}>"
+  end
+  def to_s; inspect end
+
+# methods added for rspec readability
+  def folk?; !has_parent? && !has_child? end
+  def root?; !has_parent? && has_child? end
+
+end
