@@ -1,34 +1,43 @@
 require_relative 'debug'
 require_relative 'tag'
+require_relative '../../src/model/mongo_mapper-db'
 
 #Debug.new(class:'Tag') # comment out to turn off
 #Debug.new(method:'abstract')
 
-class Item
+class Album < PAlbum
 
-  def self.taxonomy=(taxonomy) @@taxonomy = taxonomy end
-  def self.taxonomy; @@taxonomy; end
-  def self.items=(items) @@items = items end
-  def self.items; @@items end
+  def initialize(name,taxonomy)
+    super(name:name,taxonomy:taxonomy._id)
+    save
+  end
 
-  attr_accessor :date, :name, :content, :tags, :sees
+  def add_item(entry=nil)
+    unless !entry.is_a? String || entry.nil? || entry.empty?
+      Item.new(entry,self)
+    else
+      nil
+    end
+  end
 
-  Item.items = []
+end
 
-  def initialize(entry=nil)
-    @date = Time.now
-    @name = ''
-    @content = ''
-    @tags = []
-    @sees = []
+class Item < PItem
+
+  def initialize(entry,album)
+    super(date:Time.now,album:album)
     instantiate(entry)
   end
 
   def instantiate(entry)
-    unless !entry.is_a? String || entry.nil? || entry.empty?
-      parse(entry)
-      Item.items |= [self]
-    end
+    parse(entry)
+    save
+#    puts "Item.instantiate: name=#{name}, date=#{date}, album=#{album}, tags=#{tags}"
+    self
+  end
+
+  def get_taxonomy
+    album.taxonomy
   end
 
   def parse(entry)
@@ -40,10 +49,10 @@ class Item
     # gets @name and @content
     first, *rest = entry.split("\n")
     Debug.show(class:self.class,method:__method__,note:'1',vars:[['first',first],['rest',rest]])
-    @name = first if first
+    self.name = first if first
     Debug.show(class:self.class,method:__method__,note:'2',vars:[['name',name],['rest',rest]])
     if rest
-      @content = rest.join("\n")
+      self.content = rest.join("\n")
       Debug.show(class:self.class,method:__method__,note:'2',vars:[['content',content]])
     end
   end
@@ -56,15 +65,17 @@ class Item
       content.scan(/([+|\-|=]?)#([^\s]+)/).each do |op,tag_ddl|
         Debug.show(class:self.class,method:__method__,note:'1',vars:[['op',op],['tag_ddl',tag_ddl]])
         if op == '-'
-          @tags -= Item.taxonomy.deprecate(tag_ddl)
+          self.tags -= get_taxonomy.deprecate(tag_ddl)
+#          @tags -= Item.taxonomy.deprecate(tag_ddl)
           Debug.show(class:self.class,method:__method__,note:'2a',vars:[['tags',tags],['Item.taxonomy.tags',Item.taxonomy.tags]])
         else
-          leaves = Item.taxonomy.instantiate(tag_ddl)
+          leaves = get_taxonomy.instantiate(tag_ddl)
           Debug.show(class:self.class,method:__method__,note:'2',vars:[['leaves',leaves]])
           if op == '' || op == "="
-            leaves.each {|tag| tag.items |= [self]}
-            @tags |= leaves
-            Debug.show(class:self.class,method:__method__,note:'2b',vars:[['tags',tags],['Item.taxonomy.tags',Item.taxonomy.tags]])
+            leaves.each {|tag| tag.union_items([self])}
+            self.tags << leaves
+#            @tags |= leaves
+            Debug.show(class:self.class,method:__method__,note:'2b',vars:[['tags',tags],['get_taxonomy.tags',get_taxonomy.tags]])
           end
         end
       end
@@ -75,19 +86,34 @@ class Item
     # get tags matching this item - the long way from the Taxonomy
     # used for testing
     result = []
-    Item.taxonomy.tags.each_value {|tag| result |= [tag] if tag.items.include? self}
+    get_taxonomy.tags.each_value {|tag| result |= [tag] if tag.items.include? self}
     result
   end
 
 end
 
-#tax = Taxonomy.new
+## RECENT TESTS ##
+
+#MongoMapper.connection.drop_database('tagm8')
+#tax = Taxonomy.new(name:'MyTax')
+#clx = tax.add_album('MyAlbum')
+#item1 = clx.add_item("Item 1\ncontent 1")
+#item2 = clx.add_item("Item 2\ncontent 2")
+#puts "clx=#{clx}, clx.name=#{clx.name}, clx.id=#{clx.id}, clx.taxonomy=#{clx.taxonomy}, clx.items=#{clx.items}"
+##item3 = Item.new.instantiate("Item 3\ncontent 3")
+##clx.add_to_set(items:item3)
+##puts "clx=#{clx}, clx.name=#{clx.name}, clx.id=#{clx.id}, clx.taxonomy=#{clx.taxonomy}, clx.items=#{clx.items}"
+#puts "item1=#{item1}, date=#{item1.date}, name=#{item1.name}, content=#{item1.content}, album=#{item1.album}, album.name=#{item1.album.name}, taxonomy=#{item1.album.taxonomy}"
+
+## ORIGINAL TESTS ##
+
 #tax.instantiate('[:cat,:dog]<:mammal')
-#puts tax.tags
-#Item.taxonomy = tax
-#item = Item.new("Item 1\n+#[mammal,fish]<:animal>[insect,bird>[parrot,eagle]]\nMy entry =#cat,fish #:dog for my cat and dog")
-#puts "item=#{item}, date=#{item.date}, name=#{item.name}, content=#{item.content}, tags=#{item.tags}"
 #puts "tax.tags=#{tax.tags}"
+#item4 = clx.add_item("Item 4\n+#[mammal,fish]<:animal>[insect,bird>[parrot,eagle]]\nMy entry =#cat,fish #:dog for my cat and dog")
+#puts "item=#{item4}, date=#{item4.date}, name=#{item4.name}, content=#{item4.content}, get_tags=#{item4.tags}"
+#puts "tax.tags=#{tax.tags}"
+
+
 
 
 
