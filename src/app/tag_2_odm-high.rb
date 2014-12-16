@@ -159,7 +159,7 @@ class Taxonomy < PTaxonomy
   end
 
   def add_album(name)
-    Album.new(name:name,taxonomy:self._id)
+    Album.new(name:name,taxonomy:self)
   end
 
 end
