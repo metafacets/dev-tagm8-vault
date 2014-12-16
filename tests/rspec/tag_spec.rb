@@ -72,7 +72,7 @@ describe 'Taxonomy' do
     MongoMapper.connection.drop_database('tagm8')
     tax = Taxonomy.new
     subject {tax.get_lazy_tag(:my_tag)}
-    methods = [:name,:children,:has_child?,:add_children,:delete_child,:parents,:has_parent?,:add_parents,:delete_parent]
+    methods = [:name,:children,:has_child?,:union_children,:subtract_children, :delete_child,:parents,:has_parent?,:union_parents,:subtract_parents, :delete_parent]
     methods.each {|method| it method do expect(subject).to respond_to(method) end }
     it ':name ok' do expect(subject.name).to eq(:my_tag.to_s) end
   end
@@ -1125,6 +1125,142 @@ describe 'Taxonomy' do
           it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
           it ':animal is root' do expect(@animal).to be_root end
           it ':food is root' do expect(@food).to be_root end
+        end
+      end
+    end
+  end
+  describe 'derivation methods' do
+    describe Tag do
+      describe :get_descendents do
+        tests = [[':a>:b>:c',[:b,:c]]\
+                ,[':a>[:b1,:b2]',[:b1,:b2]]\
+                ,[':a>[:b1,:b2>:c]',[:b1,:b2,:c]]\
+                ,[':a>[:b1,:b2]>:c',[:b1,:b2,:c]]\
+                ,[':a>[:b1>[:c1,:c2],:b2,:b3>[:c3,:c4,:c5]]',[:b1,:b2,:b3,:c1,:c2,:c3,:c4,:c5]]
+        ]
+        tests.each do |test|
+          MongoMapper.connection.drop_database('tagm8')
+          tax = Taxonomy.new
+          tax.instantiate(test[0])
+          a = tax.get_tag_by_name(:a)
+          desc = a.get_descendents.map {|d| d.name.to_sym}.sort
+          desc_ok = (desc&test[1]) == test[1]
+          it "descendents of :a from #{test[0]} = #{test[1]}" do expect(desc_ok).to be true end
+        end
+      end
+      describe :get_ancestors do
+        tests = [[':c>:b>:a',[:b,:c]]\
+                ,['[:b1,:b2]>:a',[:b1,:b2]]\
+                ,[':b1>:a<:b2<:c',[:b1,:b2,:c]]\
+                ,[':a<[:b1,:b2]<:c',[:b1,:b2,:c]]\
+                ,['[:c1,:c2]>:b1>:a<:b2<[:c3,:c4,:c5]',[:b1,:b2,:c1,:c2,:c3,:c4,:c5]]
+        ]
+        tests.each do |test|
+          MongoMapper.connection.drop_database('tagm8')
+          tax = Taxonomy.new
+          tax.instantiate(test[0])
+          a = tax.get_tag_by_name(:a)
+          ancs = a.get_ancestors.map {|d| d.name.to_sym}.sort
+          ancs_ok = (ancs&test[1]) == test[1]
+          it "ancestors of :a from #{test[0]} = #{test[1]}" do expect(ancs_ok).to be true end
+        end
+      end
+      describe :query_items do
+        describe ':a(i1)>[:b(i2,i3),:c(i3)]' do
+          MongoMapper.connection.drop_database('tagm8')
+          tax = Taxonomy.new
+          alm = tax.add_album('alm')
+          tax.instantiate(':a>[:b,:c]')
+          a = tax.get_tag_by_name(:a)
+          b = tax.get_tag_by_name(:b)
+          c = tax.get_tag_by_name(:c)
+          i1 = alm.add_item('i1')
+          i2 = alm.add_item('i2')
+          i3 = alm.add_item('i3')
+          a.union_items([i1])
+          b.union_items([i2,i3])
+          c.union_items([i3])
+          #a.items = [i1]
+          #b.items = [i2,i3]
+          #c.items = [i3]
+          query_items_a = a.query_items.map {|item| item.name.to_sym}.sort
+          query_items_b = b.query_items.map {|item| item.name.to_sym}.sort
+          query_items_c = c.query_items.map {|item| item.name.to_sym}.sort
+          it "a.query_items = [:i1,:i2,:i3]" do expect(query_items_a).to eq([:i1,:i2,:i3]) end
+          it "b.query_items = [:i2,:i3]" do expect(query_items_b).to eq([:i2,:i3]) end
+          it "c.query_items = [:i3]" do expect(query_items_c).to eq([:i3]) end
+        end
+      end
+    end
+    describe Taxonomy do
+      describe :query_items do
+        describe ':a(i1)>[:b1(i2)>[:c1(i3),:c2(i3,i4)],:b2>[:c3,:c4(i4)]]' do
+          describe 'basic syntax' do
+            tests = [['#a',[:i1,:i2,:i3,:i4]]\
+                    ,[':a',[:i1,:i2,:i3,:i4]]\
+                    ,['#b1',[:i2,:i3,:i4]]\
+                    ,['#b2',[:i4]]\
+                    ,['#c1',[:i3]]\
+                    ,['#c2',[:i3,:i4]]\
+                    ,['#c3',[]]\
+                    ,['#c4',[:i4]]\
+                    ,['#x',[:i5]]\
+                    ,['#c4|#c1',[:i3,:i4]]\
+                    ,['#c4&#c1',[]]\
+                    ,['#c4|#c2',[:i3,:i4]]\
+                    ,['#c4&#c2',[:i4]]\
+                    ,['#c4#c2',[:i4]]\
+                    ,['(#c4&#c2)|#x',[:i4,:i5]]\
+                    ]
+            tests.each do |test|
+              MongoMapper.connection.drop_database('tagm8')
+              tax = Taxonomy.new
+              alm = tax.add_album('alm')
+              tax.instantiate(':a>[:b1>[:c1,:c2],:b2>[:c3,:c4]]')
+              #puts tax.tags
+              #Item.taxonomy = tax
+              alm.add_item("i1\n#a")
+              alm.add_item("i2\n#b1")
+              alm.add_item("i3\n#c1,c2")
+              alm.add_item("i4\n#c2,c4")
+              alm.add_item("i5\n#x")
+              result = tax.query_items(test[0]).map {|item| item.name.to_sym}.sort
+              it "query=#{test[0]}, result=#{test[1]}" do expect(result).to eq(test[1]) end
+            end
+          end
+          describe 'alternate, poor or bad syntax' do
+            tests = [['#A',[:i1,:i2,:i3,:i4]]\
+                    ,['#:a',[:i1,:i2,:i3,:i4]]\
+                    ,['a',[:i1,:i2,:i3,:i4]]\
+                    ,[':a',[:i1,:i2,:i3,:i4]]\
+                    ,['#c4,#c1',[:i3,:i4]]\
+                    ,['#c4,|#c1',[:i3,:i4]]\
+                    ,['#c4|,#c1',[:i3,:i4]]\
+                    ,['#c4+#c2',[:i4]]\
+                    ,['#c4+&#c2',[:i4]]\
+                    ,['#c4&+#c2',[:i4]]\
+                    ,['#c4#c2',[:i4]]\
+                    ,['(#c4&#c2|#x',[]]\
+                    ,['#x_',[]]\
+                    ,['#1x',[]]\
+                    ,['#y',[]]\
+                    ]
+            tests.each do |test|
+              MongoMapper.connection.drop_database('tagm8')
+              tax = Taxonomy.new
+              alm = tax.add_album('alm')
+              tax.instantiate(':a>[:b1>[:c1,:c2],:b2>[:c3,:c4]]')
+              #puts tax.tags
+              #Item.taxonomy = tax
+              alm.add_item("i1\n#a")
+              alm.add_item("i2\n#b1")
+              alm.add_item("i3\n#c1,c2")
+              alm.add_item("i4\n#c2,c4")
+              alm.add_item("i5\n#x")
+              result = tax.query_items(test[0]).map {|item| item.name.to_sym}.sort
+              it "query=#{test[0]}, result=#{test[1]}" do expect(result).to eq(test[1]) end
+            end
+          end
         end
       end
     end

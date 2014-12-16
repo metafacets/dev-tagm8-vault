@@ -6,11 +6,14 @@ MongoMapper.database = 'tagm8'
 MongoMapper.connection.drop_database('tagm8')
 
 class PTaxonomy
+  # PTaxonomy <->> PTag   - manual
+  # PTaxonomy <->> PAlbum - ODM
   include MongoMapper::Document
   key :name, String
   key :dag, String
+  key :album_ids, Array
 #  many :tags, :class_name => 'PTag'
-#  many :collections, :class_name => 'PCollection'
+  many :albums, :class_name => 'PAlbum', :in => :album_ids
 
 #  def set_dag(dag)
 #    @dag = dag
@@ -124,6 +127,8 @@ class PTaxonomy
 end
 
 class PTag
+  # PTaxonomy <->> PTag - manual (because ODM can't handle recursive parents and children links)
+  # PTag <<->> PItem    - ODM
   include MongoMapper::Document
   key :name, String
   key :parents, Array
@@ -132,6 +137,8 @@ class PTag
   key :is_root, Boolean
   key :is_folk, Boolean
   key :taxonomy, String
+  key :item_ids, Array
+  many :items, :class_name => 'PItem', :in => :item_ids
 
   def get_taxonomy
     PTaxonomy.first(_id:taxonomy)
@@ -189,13 +196,15 @@ class PTag
     pull_all(children:children.map{|child| child._id.to_s})
   end
 
-  def get_items
-    items.map{|id| PItem.first(_id:id.to_s)}
-  end
+#  def get_items
+#    items.map{|id| PItem.first(_id:id.to_s)}
+#  end
 
   def union_items(items)
 #    puts "PTag.union_items: self.name=#{self.name}, items=#{items}"
-    items.each{|item| add_to_set(items:item._id.to_s)}
+    items.each{|item| add_to_set(items:item._id.to_s)} # manual mapping only
+    self.items |= items
+    save
   end
 
   def subtract_items(items)
@@ -211,11 +220,13 @@ class PTag
 end
 
 class PAlbum
+  # PTaxonomy <->> PAlbum - ODM
+  # PItem <<-> PAlbum     - ODM
   include MongoMapper::Document
   key :name, String
   key :date, String
   key :content, String
-  key :taxonomy, String
+  belongs_to :taxonomy, :class_name => 'PTaxonomy'
   many :items, :class_name => 'PItem'
 
   def get_taxonomy
@@ -225,12 +236,15 @@ class PAlbum
 end
 
 class PItem
+  # PItem <<-> PAlbum - ODM
+  # PTag <<->> PItem  - ODM
   include MongoMapper::Document
   key :name, String
   key :date, String
   key :content, String
   key :sees, Array
-  key :tags, Array
+  key :tag_ids, Array
+  many :tags, :class_name => 'PTag', :in => :tag_ids
   belongs_to :album, :class_name => 'PAlbum'
 
   def get_album

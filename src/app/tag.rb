@@ -1,6 +1,7 @@
 require_relative 'debug'
 require_relative 'ddl'
 require_relative 'query'
+require_relative 'item'
 require_relative '../../src/model/mongo_mapper-db'
 
 #Debug.new(class:'Tag') # comment out to turn off

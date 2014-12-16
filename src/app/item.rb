@@ -8,7 +8,7 @@ require_relative '../../src/model/mongo_mapper-db'
 class Album < PAlbum
 
   def initialize(name,taxonomy)
-    super(name:name,taxonomy:taxonomy._id)
+    super(name:name,taxonomy:taxonomy)
     save
   end
 
@@ -96,6 +96,7 @@ end
 
 #MongoMapper.connection.drop_database('tagm8')
 #tax = Taxonomy.new(name:'MyTax')
+#puts "tax=#{tax}, tax.name=#{tax.name}, tax.id=#{tax.id}"
 #clx = tax.add_album('MyAlbum')
 #item1 = clx.add_item("Item 1\ncontent 1")
 #item2 = clx.add_item("Item 2\ncontent 2")
