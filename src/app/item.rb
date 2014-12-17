@@ -14,7 +14,7 @@ class Album < PAlbum
 
   def add_item(entry=nil)
     unless !entry.is_a? String || entry.nil? || entry.empty?
-      Item.new(entry,self)
+      Item.new(self).instantiate(entry)
     else
       nil
     end
@@ -24,9 +24,8 @@ end
 
 class Item < PItem
 
-  def initialize(entry,album)
+  def initialize(album)
     super(date:Time.now,album:album)
-    instantiate(entry)
   end
 
   def instantiate(entry)
@@ -67,7 +66,7 @@ class Item < PItem
         if op == '-'
           self.tags -= get_taxonomy.deprecate(tag_ddl)
 #          @tags -= Item.taxonomy.deprecate(tag_ddl)
-          Debug.show(class:self.class,method:__method__,note:'2a',vars:[['tags',tags],['Item.taxonomy.tags',Item.taxonomy.tags]])
+          Debug.show(class:self.class,method:__method__,note:'2a',vars:[['tags',tags],['get_taxonomy.tags',get_taxonomy.tags]])
         else
           leaves = get_taxonomy.instantiate(tag_ddl)
           Debug.show(class:self.class,method:__method__,note:'2',vars:[['leaves',leaves]])
@@ -86,7 +85,7 @@ class Item < PItem
     # get tags matching this item - the long way from the Taxonomy
     # used for testing
     result = []
-    get_taxonomy.tags.each_value {|tag| result |= [tag] if tag.items.include? self}
+    get_taxonomy.tags.each {|tag| result |= [tag] if tag.items.include? self}
     result
   end
 
