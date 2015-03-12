@@ -6,21 +6,26 @@ MongoMapper.database = 'tagm8'
 MongoMapper.connection.drop_database('tagm8')
 
 class PTaxonomy
-  # PTaxonomy <->> PTag   - manual
-  # PTaxonomy <->> PAlbum - ODM
+  # PTaxonomy <->> PTag    - manual
+  # PTaxonomy <->> PAlbum  - ODM
   include MongoMapper::Document
   key :name, String
   key :dag, String
-  key :album_ids, Array
-#  many :tags, :class_name => 'PTag'
-  many :albums, :class_name => 'PAlbum', :in => :album_ids
+  many :albums, :class_name => 'PAlbum'
 
-#  def set_dag(dag)
-#    @dag = dag
-#    save
-#  end
+  def self.count_by_name(name)
+    PTaxonomy.where(name:name.to_s).count
+  end
 
-  def get_names_by_id(ids)
+  def self.get_by_name(name)
+    PTaxonomy.first(name:name)
+  end
+
+  def self.list
+    PTaxonomy.all.map {|tax| tax.name}
+  end
+
+  def list_tags_by_id(ids)
     names = []
     ids.each do |id|
       tag = PTag.first(_id:id.to_s)
@@ -45,24 +50,13 @@ class PTaxonomy
     PTag.where(taxonomy:self._id.to_s).all
   end
 
-  def tag_count(name=nil)
+  def count_tags(name=nil)
     if name.nil?
       PTag.where(taxonomy:self._id.to_s).count
     else
       PTag.where(taxonomy:self._id.to_s,name:name.to_s).count
     end
   end
-
-#  def has_tag?(name=nil)
-#    tags = tag_count
-#    if tags < 1
-#      false
-#    elsif name.nil?
-#      tags > 0
-#    else
-#      PTag.where(taxonomy:self._id.to_s,name:name.to_s).count > 0
-#    end
-#  end
 
   def subtract_tags(tags_to_delete)
     tags_to_delete.each {|tag| tag.delete}
@@ -72,12 +66,12 @@ class PTaxonomy
     PTag.where(taxonomy:self._id.to_s,is_root:true).all
   end
 
-  def root_count
+  def count_roots
     PTag.where(taxonomy:self._id.to_s,is_root:true).count
   end
 
   def has_root?(tag=nil)
-    roots = root_count
+    roots = count_roots
     if roots < 1
       false
     elsif tag.nil?
@@ -101,12 +95,12 @@ class PTaxonomy
 
   def folksonomy; folksonomies end
 
-  def folksonomy_count
+  def count_folksonomies
     PTag.where(taxonomy:self._id.to_s,is_folk:true).count
   end
 
   def has_folksonomy?(tag=nil)
-    folks = folksonomy_count
+    folks = count_folksonomies
     if folks < 1
       false
     elsif tag.nil?
@@ -122,6 +116,18 @@ class PTaxonomy
 
   def subtract_folksonomies(folks_to_delete)
     folks_to_delete.each{|tag| tag.is_folksonomy = false}
+  end
+
+  def count_albums(name=nil)
+    if name.nil?
+      albums.count
+    else
+      albums.select {|alm| alm.name == name}.count
+    end
+  end
+
+  def list_albums
+    albums.map {|alm| alm.name}
   end
 
 end
@@ -196,12 +202,7 @@ class PTag
     pull_all(children:children.map{|child| child._id.to_s})
   end
 
-#  def get_items
-#    items.map{|id| PItem.first(_id:id.to_s)}
-#  end
-
   def union_items(items)
-#    puts "PTag.union_items: self.name=#{self.name}, items=#{items}"
     items.each{|item| add_to_set(items:item._id.to_s)} # manual mapping only
     self.items |= items
     save
@@ -229,8 +230,16 @@ class PAlbum
   belongs_to :taxonomy, :class_name => 'PTaxonomy'
   many :items, :class_name => 'PItem'
 
-  def get_taxonomy
-    PTaxonomy.first(_id:taxonomy)
+  def self.count_by_name(name=nil)
+    PAlbum.where(name:name.to_s).count
+  end
+
+  def self.get_by_name(name)
+    PAlbum.first(name:name)
+  end
+
+  def self.list
+    PAlbum.all.map {|alm| alm.name}
   end
 
 end
@@ -247,50 +256,11 @@ class PItem
   many :tags, :class_name => 'PTag', :in => :tag_ids
   belongs_to :album, :class_name => 'PAlbum'
 
-  def get_album
-    PAlbum.first(_id:album)
-  end
-
   def union_tags(tags)
     puts "Items.union_tags 1: self.tags=#{self.tags}, tags=#{tags}"
     self.tags |= tags.map{|tag| tag._id.to_s}
     puts "Items.union_tags 2: self.tags=#{self.tags}"
   end
-
-  def get_tags
-    tags.map{|id| PTag.first(_id:id.to_s)}
-  end
-
-#  def set_date(date)
-#    @date = date
-#    save
-#  end
-
-#  def set_name(name)
-#    @name = name
-#    save
-#  end
-
-#  def set_content(content)
-#    @content = content
-#    save
-#  end
-
-#  def get_tags
-#    tags.map{|id| PTag.first(_id:id.to_s)}
-#  end
-
-#  def union_tags(tags)
-#    puts "PItems.union_tags 1: self.tags=#{self.tags}, tags=#{tags.map{|t| t._id.to_s}}"
-#    tags.each{|tag| add_to_set(tags:tag._id.to_s)}
-#    puts "PItems.union_tags 2: self.tags=#{self.tags}"
-#  end
-
-#  def subtract_tags(tags)
-#    puts "PItems.subtract_tags 1: get_tags=#{get_tags}, tags=#{tags}"
-#    pull_all(tags:tags.map{|tag| tag._id.to_s})
-#    puts "PItems.subtract_tags 2: get_tags=#{get_tags}"
-#  end
 
 end
 

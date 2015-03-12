@@ -3,11 +3,26 @@ require_relative 'ddl'
 require_relative 'query'
 require_relative 'item'
 require_relative '../../src/model/mongo_mapper-db'
+#require 'singleton'
 
 #Debug.new(class:'Tag') # comment out to turn off
 #Debug.new(method:'abstract')
 
 class Taxonomy < PTaxonomy
+
+  def self.exists?(name=nil)
+    name.nil? ? self.count > 0 : self.count_by_name(name) > 0
+  end
+
+  # open existing taxonomy by name
+  def self.open(name) self.get_by_name(name) end
+
+  # create new or open existing taxonomy by name
+  def self.lazy(name)
+    tax = self.open(name)
+    tax = self.new(name) if tax.nil?
+    tax
+  end
 
   def initialize(name='taxonomy')
     super(name:name,dag:'prevent')
@@ -15,6 +30,10 @@ class Taxonomy < PTaxonomy
   end
 
   def empty?; !has_tag? && !has_root? && !has_folksonomy? end
+
+  def show(item)
+    eval('#{'+item+'}')
+  end
 
 #  attr_reader :dag
 
@@ -95,7 +114,7 @@ class Taxonomy < PTaxonomy
     end
   end
 
-  def has_tag?(name=nil) tag_count(name) > 0 end
+  def has_tag?(name=nil) count_tags(name) > 0 end
 
   def add_tags(names_children, name_parent=nil)
     children = names_children.map {|name| get_lazy_tag(name)}.uniq
@@ -169,7 +188,11 @@ class Taxonomy < PTaxonomy
     update_status(parents|children) if status
   end
 
-  def add_album(name) Album.new(name,self) end
+  def add_album(name)
+    Album.new(name,self)
+  end
+
+  def has_album?(name=nil) count_albums(name) > 0 end
 
 end
 
@@ -184,9 +207,9 @@ class Tag < PTag
     parent.delete_child(self)
   end
 
-  def create_parents(parents); taxonomy.link([self],parents) end
+  def create_parents(parents); get_taxonomy.link([self],parents) end
 
-  def create_children(children); taxonomy.link(children,[self]) end
+  def create_children(children); get_taxonomy.link(children,[self]) end
 
   def empty_children; @children = [] end
 
@@ -220,9 +243,10 @@ class Tag < PTag
 
   def delete_descendents
     descendents = get_descendents
-    taxonomy.subtract_tags(descendents)
-    taxonomy.subtract_roots(descendents)
-    taxonomy.subtract_folksonomies(descendents)
+    tax = get_taxonomy
+    tax.subtract_tags(descendents)
+    tax.subtract_roots(descendents)
+    tax.subtract_folksonomies(descendents)
     empty_children
   end
 
@@ -232,7 +256,7 @@ class Tag < PTag
     # delete self and its descendents
     delete_descendents
     parent.delete_child(self)
-    taxonomy.subtract_tags([self])
+    get_taxonomy.subtract_tags([self])
   end
 
   def add_branch(tag)
@@ -248,8 +272,7 @@ class Tag < PTag
 
   def inspect
     items.empty? ? pretty_items = '' : pretty_items = ", items=#{items.map {|item| item.name}}"
-    #"Tag<_id=#{_id}, name=#{name}, tax=#{taxonomy}, parents=#{get_taxonomy.get_names_by_id(parents)}, children=#{get_taxonomy.get_names_by_id(children)}#{pretty_items}>"
-    "Tag<#{name}: parents=#{get_taxonomy.get_names_by_id(parents)}, children=#{get_taxonomy.get_names_by_id(children)}#{pretty_items}>"
+    "Tag<#{name}: parents=#{get_taxonomy.list_tags_by_id(parents)}, children=#{get_taxonomy.list_tags_by_id(children)}#{pretty_items}>"
   end
   def to_s; inspect end
 

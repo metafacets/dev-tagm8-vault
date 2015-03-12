@@ -2,6 +2,38 @@ require 'rspec'
 require_relative '../../src/app/item'
 
 describe Item do
+  context 'class methods' do
+    MongoMapper.connection.drop_database('tagm8')
+    tax1 = Taxonomy.new('tax1')
+    tax2 = Taxonomy.new('tax2')
+    alm1 = tax1.add_album('alm1')
+    tax1.add_album('alm2')
+    tax2.add_album('alm3')
+    has_alm1 = Album.exists?(name='alm1')
+    has_alm4 = Album.exists?(name='alm4')
+    tax1_has_alm1 = tax1.has_album?(name='alm1')
+    tax1_has_alm3 = tax1.has_album?(name='alm3')
+    oalm1 = Album.open('alm1')
+    oalm4 = Album.open('alm4')
+#    lalm1 = Album.lazy('alm1')
+#    lalm4 = Album.lazy('alm4')
+    count = Album.count
+    count_tax1 = tax1.count_albums
+    list = Album.list.sort
+    list_tax1 = tax1.list_albums.sort
+    it 'existent :exists?' do expect(has_alm1).to be_truthy end
+    it 'non-existent :exists?' do expect(has_alm4).to be_falsey end
+    it ':open existing' do expect(oalm1._id).to eq(alm1.id) end
+    it ':open non-existent' do expect(oalm4).to be_nil end
+#    it ':lazy existing' do expect(lalm1._id).to eq(alm1.id) end
+#    it ':lazy non-existant' do expect(lalm4.name).to eq('alm4') end
+    it :count do expect(count).to eq(3) end
+    it 'tax1 :album_count' do expect(count_tax1).to eq(2) end
+    it :list do expect(list).to eq(['alm1','alm2','alm3']) end
+    it 'tax1 :list_albums' do expect(list_tax1).to eq(['alm1','alm2']) end
+    it 'tax1 has existent album' do expect(tax1_has_alm1).to be_truthy end
+    it 'tax1 does not have non-existent album' do expect(tax1_has_alm3).to be_falsey end
+  end
   describe 'instance methods' do
     MongoMapper.connection.drop_database('tagm8')
     tax = Taxonomy.new

@@ -5,6 +5,28 @@ include AnimalTaxonomy
 
 
 describe 'Taxonomy' do
+  context 'class methods' do
+    MongoMapper.connection.drop_database('tagm8')
+    tax1 = Taxonomy.new(name='tax1')
+    Taxonomy.new(name='tax2')
+    Taxonomy.new(name='tax3')
+    hastax1 = Taxonomy.exists?(name='tax1')
+    hastax4 = Taxonomy.exists?(name='tax4')
+    otax1 = Taxonomy.open('tax1')
+    otax4 = Taxonomy.open('tax4')
+    ltax1 = Taxonomy.lazy('tax1')
+    ltax4 = Taxonomy.lazy('tax4')
+    count = Taxonomy.count
+    list = Taxonomy.list.sort
+    it 'existant exists' do expect(hastax1).to be_truthy end
+    it 'non-existant exists' do expect(hastax4).to be_falsey end
+    it 'open existing' do expect(otax1._id).to eq(tax1.id) end
+    it 'open non-existant' do expect(otax4).to be_nil end
+    it 'open existing' do expect(ltax1._id).to eq(tax1.id) end
+    it 'open non-existant' do expect(ltax4.name).to eq('tax4') end
+    it :taxonomy_count do expect(count).to eq(4) end
+    it :taxonomies_by_name do expect(list).to eq(['tax1','tax2','tax3','tax4']) end
+  end
   context 'empty' do
     MongoMapper.connection.drop_database('tagm8')
     tax = Taxonomy.new
@@ -43,7 +65,7 @@ describe 'Taxonomy' do
       @animal = tax.get_tag_by_name(:animal)
       @mouse = tax.get_tag_by_name(:mouse)
       @car = tax.get_tag_by_name(:car)
-      @size = tax.tag_count
+      @size = tax.count_tags
     end
     it 'taxonomy has 3 tags' do expect(@size).to eq(3) end
     it 'car has no children' do expect(@car).to_not have_child end
@@ -64,9 +86,9 @@ describe 'Taxonomy' do
       MongoMapper.connection.drop_database('tagm8')
       @tax = animal_taxonomy(false)
     end
-    it 'taxonomy has 11 tags' do expect(@tax.tag_count).to eq(11) end
-    it 'taxonomy has no folks' do expect(@tax.folksonomy_count).to eq(0) end
-    it 'taxonomy has 2 roots' do expect(@tax.root_count).to eq(2) end
+    it 'taxonomy has 11 tags' do expect(@tax.count_tags).to eq(11) end
+    it 'taxonomy has no folks' do expect(@tax.count_folksonomies).to eq(0) end
+    it 'taxonomy has 2 roots' do expect(@tax.count_roots).to eq(2) end
   end
   context 'instance methods' do
     MongoMapper.connection.drop_database('tagm8')
@@ -103,8 +125,8 @@ describe 'Taxonomy' do
           end
           it ':a has no child' do expect(@a).to_not have_child end
           it ':b has no parent' do expect(@b).to_not have_parent end
-          it 'has no roots' do expect(@tax.root_count).to eq(0) end
-          it 'has 2 folksonomies' do expect(@tax.folksonomy_count).to eq(2) end
+          it 'has no roots' do expect(@tax.count_roots).to eq(0) end
+          it 'has 2 folksonomies' do expect(@tax.count_folksonomies).to eq(2) end
         end
         describe :delete_parent do
           before(:all) do
@@ -117,8 +139,8 @@ describe 'Taxonomy' do
           end
           it ':a has no child' do expect(@a).to_not have_child end
           it ':b has no parent' do expect(@b).to_not have_parent end
-          it 'has no roots' do expect(@tax.root_count).to eq(0) end
-          it 'has 2 folksonomies' do expect(@tax.folksonomy_count).to eq(2) end
+          it 'has no roots' do expect(@tax.count_roots).to eq(0) end
+          it 'has 2 folksonomies' do expect(@tax.count_folksonomies).to eq(2) end
         end
       end
       context ':b -x-> :a -> :r' do
@@ -136,9 +158,9 @@ describe 'Taxonomy' do
           it ':a has child' do expect(@a).to have_child end
           it ':a has parent' do expect(@a).to have_parent end
           it ':b has parent' do expect(@b).to have_parent end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
           it ':r is root' do expect(@r).to be_root end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         end
         context :delete_child do
           before(:all) do
@@ -155,9 +177,9 @@ describe 'Taxonomy' do
           it ':a has parent' do expect(@a).to have_parent end
           it ':a has no child' do expect(@a).to_not have_child end
           it ':b has no psrent' do expect(@b).to_not have_parent end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
           it ':r is root' do expect(@r).to be_root end
-          it 'has 1 folk' do expect(@tax.folksonomy_count).to eq(1) end
+          it 'has 1 folk' do expect(@tax.count_folksonomies).to eq(1) end
           it ':b is folk' do expect(@b).to be_folk end
         end
         context :delete_parent do
@@ -175,9 +197,9 @@ describe 'Taxonomy' do
           it ':a has parent' do expect(@a).to have_parent end
           it ':a has no child' do expect(@a).to_not have_child end
           it ':b has no psrent' do expect(@b).to_not have_parent end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
           it ':r is root' do expect(@r).to be_root end
-          it 'has 1 folk' do expect(@tax.folksonomy_count).to eq(1) end
+          it 'has 1 folk' do expect(@tax.count_folksonomies).to eq(1) end
           it ':b is folk' do expect(@b).to be_folk end
         end
       end
@@ -196,9 +218,9 @@ describe 'Taxonomy' do
           it ':b has parent' do expect(@b).to have_parent end
           it ':b has child' do expect(@b).to have_child end
           it ':l has parent' do expect(@l).to have_parent end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
           it ':a is root' do expect(@a).to be_root end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         end
         context :delete_child do
           before(:all) do
@@ -215,9 +237,9 @@ describe 'Taxonomy' do
           it ':b has no parent' do expect(@b).to_not have_parent end
           it ':b has child' do expect(@b).to have_child end
           it ':l has parent' do expect(@l).to have_parent end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
           it ':b is root' do expect(@b).to be_root end
-          it 'has 1 folk' do expect(@tax.folksonomy_count).to eq(1) end
+          it 'has 1 folk' do expect(@tax.count_folksonomies).to eq(1) end
           it ':a is folk' do expect(@a).to be_folk end
         end
         context :delete_parent do
@@ -235,9 +257,9 @@ describe 'Taxonomy' do
           it ':b has no parent' do expect(@b).to_not have_parent end
           it ':b has child' do expect(@b).to have_child end
           it ':l has parent' do expect(@l).to have_parent end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
           it ':b is root' do expect(@b).to be_root end
-          it 'has 1 folk' do expect(@tax.folksonomy_count).to eq(1) end
+          it 'has 1 folk' do expect(@tax.count_folksonomies).to eq(1) end
           it ':a is folk' do expect(@a).to be_folk end
         end
       end
@@ -255,10 +277,10 @@ describe 'Taxonomy' do
           it ':a1 has child' do expect(@a1).to have_child end
           it ':a2 has child' do expect(@a2).to have_child end
           it ':b has parent' do expect(@b).to have_parent end
-          it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
+          it 'has 2 roots' do expect(@tax.count_roots).to eq(2) end
           it ':a1 is root' do expect(@a1).to be_root end
           it ':a2 is root' do expect(@a2).to be_root end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         end
         context :delete_child do
           before(:all) do
@@ -274,9 +296,9 @@ describe 'Taxonomy' do
           it ':a1 has child' do expect(@a1).to have_child end
           it ':a2 has no child' do expect(@a2).to_not have_child end
           it ':b has parent' do expect(@b).to have_parent end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
           it ':a1 is root' do expect(@a1).to be_root end
-          it 'has 1 folk' do expect(@tax.folksonomy_count).to eq(1) end
+          it 'has 1 folk' do expect(@tax.count_folksonomies).to eq(1) end
           it ':a2 is folk' do expect(@a2).to be_folk end
         end
         context :delete_parent do
@@ -293,9 +315,9 @@ describe 'Taxonomy' do
           it ':a1 has child' do expect(@a1).to have_child end
           it ':a2 has no child' do expect(@a2).to_not have_child end
           it ':b has parent' do expect(@b).to have_parent end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
           it ':a1 is root' do expect(@a1).to be_root end
-          it 'has 1 folk' do expect(@tax.folksonomy_count).to eq(1) end
+          it 'has 1 folk' do expect(@tax.count_folksonomies).to eq(1) end
           it ':a2 is folk' do expect(@a2).to be_folk end
         end
       end
@@ -313,9 +335,9 @@ describe 'Taxonomy' do
           it ':a has child' do expect(@a).to have_child end
           it ':b1 has parent' do expect(@b1).to have_parent end
           it ':b2 has parent' do expect(@b2).to have_parent end
-          it 'has 1 roots' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 roots' do expect(@tax.count_roots).to eq(1) end
           it ':a is root' do expect(@a).to be_root end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         end
         context :delete_child do
           before(:all) do
@@ -331,9 +353,9 @@ describe 'Taxonomy' do
           it ':a has child' do expect(@a).to have_child end
           it ':b1 has parent' do expect(@b1).to have_parent end
           it ':b2 has no parent' do expect(@b2).to_not have_parent end
-          it 'has 1 roots' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 roots' do expect(@tax.count_roots).to eq(1) end
           it ':a is root' do expect(@a).to be_root end
-          it 'has 1 folk' do expect(@tax.folksonomy_count).to eq(1) end
+          it 'has 1 folk' do expect(@tax.count_folksonomies).to eq(1) end
           it ':b2 is folk' do expect(@b2).to be_folk end
         end
         context :delete_parent do
@@ -350,9 +372,9 @@ describe 'Taxonomy' do
           it ':a has child' do expect(@a).to have_child end
           it ':b1 has parent' do expect(@b1).to have_parent end
           it ':b2 has no parent' do expect(@b2).to_not have_parent end
-          it 'has 1 roots' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 roots' do expect(@tax.count_roots).to eq(1) end
           it ':a is root' do expect(@a).to be_root end
-          it 'has 1 folk' do expect(@tax.folksonomy_count).to eq(1) end
+          it 'has 1 folk' do expect(@tax.count_folksonomies).to eq(1) end
           it ':b2 is folk' do expect(@b2).to be_folk end
         end
       end
@@ -373,9 +395,9 @@ describe 'Taxonomy' do
           it ':b has parent' do expect(@b).to have_parent end
           it ':b has child' do expect(@b).to have_child end
           it ':c has parent' do expect(@c).to have_parent end
-          it 'has 1 roots' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 roots' do expect(@tax.count_roots).to eq(1) end
           it ':a is root' do expect(@a).to be_root end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         end
         describe 'after' do
           before(:all) do
@@ -390,9 +412,9 @@ describe 'Taxonomy' do
           it 'tag :b not included' do expect(@tax.has_tag?(:b)).to be_falsey end
           it ':a has child' do expect(@a).to have_child end
           it ':c has parent' do expect(@c).to have_parent end
-          it 'has 1 roots' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 roots' do expect(@tax.count_roots).to eq(1) end
           it ':a is root' do expect(@a).to be_root end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         end
       end
       describe 'c -> (b) -> [a1,a2] => c -> [a1,a2]' do
@@ -413,10 +435,10 @@ describe 'Taxonomy' do
           it ':b has parent' do expect(@b).to have_parent end
           it ':b has child' do expect(@b).to have_child end
           it ':c has parent' do expect(@c).to have_parent end
-          it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
+          it 'has 2 roots' do expect(@tax.count_roots).to eq(2) end
           it ':a1 is root' do expect(@a1).to be_root end
           it ':a2 is root' do expect(@a2).to be_root end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         end
         describe 'after' do
           before(:all) do
@@ -434,10 +456,10 @@ describe 'Taxonomy' do
           it ':a1 has child' do expect(@a1).to have_child end
           it ':a2 has child' do expect(@a2).to have_child end
           it ':c has parent' do expect(@c).to have_parent end
-          it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
+          it 'has 2 roots' do expect(@tax.count_roots).to eq(2) end
           it ':a1 is root' do expect(@a1).to be_root end
           it ':a2 is root' do expect(@a2).to be_root end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         end
       end
       describe '[c1,c2] -> (b) -> a => [c1,c2] -> a' do
@@ -458,9 +480,9 @@ describe 'Taxonomy' do
           it ':b has child' do expect(@b).to have_child end
           it ':c1 has parent' do expect(@c1).to have_parent end
           it ':c2 has parent' do expect(@c2).to have_parent end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
           it ':a is root' do expect(@a).to be_root end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         end
         describe 'after' do
           before(:all) do
@@ -478,9 +500,9 @@ describe 'Taxonomy' do
           it ':a has child' do expect(@a).to have_child end
           it ':c1 has parent' do expect(@c1).to have_parent end
           it ':c2 has parent' do expect(@c2).to have_parent end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
           it ':a is root' do expect(@a).to be_root end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         end
       end
       describe '[c1,c2] -> (b) -> [a1,a2] => [c1,c2] -> [a1,a2]' do
@@ -504,10 +526,10 @@ describe 'Taxonomy' do
           it ':b has child' do expect(@b).to have_child end
           it ':c1 has parent' do expect(@c1).to have_parent end
           it ':c2 has parent' do expect(@c2).to have_parent end
-          it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
+          it 'has 2 roots' do expect(@tax.count_roots).to eq(2) end
           it ':a1 is root' do expect(@a1).to be_root end
           it ':a2 is root' do expect(@a2).to be_root end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         end
         describe 'after' do
           before(:all) do
@@ -528,10 +550,10 @@ describe 'Taxonomy' do
           it ':a2 has child' do expect(@a2).to have_child end
           it ':c1 has parent' do expect(@c1).to have_parent end
           it ':c2 has parent' do expect(@c2).to have_parent end
-          it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
+          it 'has 2 roots' do expect(@tax.count_roots).to eq(2) end
           it ':a1 is root' do expect(@a1).to be_root end
           it ':a2 is root' do expect(@a2).to be_root end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         end
       end
       describe 'b2 -> (a) -> b1 -> c => b2, b1 -> c' do
@@ -555,9 +577,9 @@ describe 'Taxonomy' do
           it ':b2 has no children' do expect(@b2).to_not have_child end
           it ':c has parent' do expect(@c).to have_parent end
           it ':c has no children' do expect(@c).to_not have_child end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
           it ':a is root' do expect(@a).to be_root end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         end
         describe 'after' do
           before(:all) do
@@ -578,9 +600,9 @@ describe 'Taxonomy' do
           it ':b2 has no children' do expect(@b2).to_not have_child end
           it ':c has parent' do expect(@c).to have_parent end
           it ':c has no children' do expect(@c).to_not have_child end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
           it ':b1 is root' do expect(@b1).to be_root end
-          it 'has 1 folks' do expect(@tax.folksonomy_count).to eq(1) end
+          it 'has 1 folks' do expect(@tax.count_folksonomies).to eq(1) end
           it ':b2 is folk' do expect(@b2).to be_folk end
         end
       end
@@ -597,7 +619,7 @@ describe 'Taxonomy' do
             @tax.add_tag(:a,:a)
             @a =@tax.get_tag_by_name(:a)
           end
-          it 'taxonomy has 1 tag' do expect(@tax.tag_count).to eq(1) end
+          it 'taxonomy has 1 tag' do expect(@tax.count_tags).to eq(1) end
           it 'a has no parents' do expect(@a).to_not have_parent end
           it 'a has no children' do expect(@a).to_not have_child end
           it 'a is not root' do expect(@a).to_not be_root end
@@ -616,9 +638,9 @@ describe 'Taxonomy' do
           @a =@tax.get_tag_by_name(:a)
           @b =@tax.get_tag_by_name(:b)
         end
-        it 'taxonomy has 2 tags' do expect(@tax.tag_count).to eq(2) end
-        it 'roots has 1 tag' do expect(@tax.root_count).to eq(1) end
-        it 'folks is empty' do expect(@tax.folksonomy_count).to eq(0) end
+        it 'taxonomy has 2 tags' do expect(@tax.count_tags).to eq(2) end
+        it 'roots has 1 tag' do expect(@tax.count_roots).to eq(1) end
+        it 'folks is empty' do expect(@tax.count_folksonomies).to eq(0) end
         it ':a has no parent' do expect(@a).to_not have_parent end
         it ':a has child' do expect(@a).to have_child end
         it ':b has parent' do expect(@b).to have_parent end
@@ -635,9 +657,9 @@ describe 'Taxonomy' do
           @a =@tax.get_tag_by_name(:a)
           @b =@tax.get_tag_by_name(:b)
         end
-        it 'taxonomy has 2 tags' do expect(@tax.tag_count).to eq(2) end
-        it 'roots has 1 tag' do expect(@tax.root_count).to eq(1) end
-        it 'folks is empty' do expect(@tax.folksonomy_count).to eq(0) end
+        it 'taxonomy has 2 tags' do expect(@tax.count_tags).to eq(2) end
+        it 'roots has 1 tag' do expect(@tax.count_roots).to eq(1) end
+        it 'folks is empty' do expect(@tax.count_folksonomies).to eq(0) end
         it 'b has no parent' do expect(@b).to_not have_parent end
         it 'b has child' do expect(@b).to have_child end
         it 'a has parent' do expect(@a).to have_parent end
@@ -658,9 +680,9 @@ describe 'Taxonomy' do
           @b =@tax.get_tag_by_name(:b)
           @c =@tax.get_tag_by_name(:c)
         end
-        it 'taxonomy has 3 tags' do expect(@tax.tag_count).to eq(3) end
-        it 'roots has 1 tag' do expect(@tax.root_count).to eq(1) end
-        it 'folks is empty' do expect(@tax.folksonomy_count).to eq(0) end
+        it 'taxonomy has 3 tags' do expect(@tax.count_tags).to eq(3) end
+        it 'roots has 1 tag' do expect(@tax.count_roots).to eq(1) end
+        it 'folks is empty' do expect(@tax.count_folksonomies).to eq(0) end
         it 'a has no parent' do expect(@a).to_not have_parent end
         it 'a has child' do expect(@a).to have_child end
         it 'c has parent' do expect(@c).to have_parent end
@@ -681,9 +703,9 @@ describe 'Taxonomy' do
           @b =@tax.get_tag_by_name(:b)
           @c =@tax.get_tag_by_name(:c)
         end
-        it 'taxonomy has 3 tags' do expect(@tax.tag_count).to eq(3) end
-        it 'roots has 1 tag' do expect(@tax.root_count).to eq(1) end
-        it 'folks is empty' do expect(@tax.folksonomy_count).to eq(0) end
+        it 'taxonomy has 3 tags' do expect(@tax.count_tags).to eq(3) end
+        it 'roots has 1 tag' do expect(@tax.count_roots).to eq(1) end
+        it 'folks is empty' do expect(@tax.count_folksonomies).to eq(0) end
         it 'c has no parent' do expect(@c).to_not have_parent end
         it 'c has child' do expect(@c).to have_child end
         it 'b has parent' do expect(@b).to have_parent end
@@ -708,9 +730,9 @@ describe 'Taxonomy' do
           @b2 =@tax.get_tag_by_name(:b2)
           @c1 =@tax.get_tag_by_name(:c1)
         end
-        it 'taxonomy has 4 tags' do expect(@tax.tag_count).to eq(4) end
-        it 'has 1 root' do expect(@tax.root_count).to eq(1) end
-        it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+        it 'taxonomy has 4 tags' do expect(@tax.count_tags).to eq(4) end
+        it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
+        it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         it ':b2 has no parent' do expect(@b2).to_not have_parent end
         it ':b2 has child' do expect(@b2).to have_child end
         it ':a has parent' do expect(@a).to have_parent end
@@ -735,9 +757,9 @@ describe 'Taxonomy' do
           @b2 =@tax.get_tag_by_name(:b2)
           @c1 =@tax.get_tag_by_name(:c1)
         end
-        it 'taxonomy has 4 tags' do expect(@tax.tag_count).to eq(4) end
-        it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
-        it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+        it 'taxonomy has 4 tags' do expect(@tax.count_tags).to eq(4) end
+        it 'has 2 roots' do expect(@tax.count_roots).to eq(2) end
+        it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
         it ':b2 has no parent' do expect(@b2).to_not have_parent end
         it ':b2 has child' do expect(@b2).to have_child end
         it ':a has parent' do expect(@a).to have_parent end
@@ -761,9 +783,9 @@ describe 'Taxonomy' do
             @tax.dag_prevent
             @tax.instantiate(ddl)
           end
-          it 'taxonomy empty' do expect(@tax.tag_count).to eq(0) end
-          it 'roots empty' do expect(@tax.root_count).to eq(0) end
-          it 'folk empty' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'taxonomy empty' do expect(@tax.count_tags).to eq(0) end
+          it 'roots empty' do expect(@tax.count_roots).to eq(0) end
+          it 'folk empty' do expect(@tax.count_folksonomies).to eq(0) end
         end
       end
     end
@@ -777,9 +799,9 @@ describe 'Taxonomy' do
             @tax.instantiate(ddl)
             @a =@tax.get_tag_by_name(:a)
           end
-          it 'taxonomy has 1 tag' do expect(@tax.tag_count).to eq(1) end
-          it 'has no roots' do expect(@tax.root_count).to eq(0) end
-          it 'has 1 folk' do expect(@tax.folksonomy_count).to eq(1) end
+          it 'taxonomy has 1 tag' do expect(@tax.count_tags).to eq(1) end
+          it 'has no roots' do expect(@tax.count_roots).to eq(0) end
+          it 'has 1 folk' do expect(@tax.count_folksonomies).to eq(1) end
           it ':a is folk' do expect(@a).to be_folk end
         end
       end
@@ -795,9 +817,9 @@ describe 'Taxonomy' do
             @a =@tax.get_tag_by_name(:a)
             @b =@tax.get_tag_by_name(:b)
           end
-          it 'taxonomy has 2 tags' do expect(@tax.tag_count).to eq(2) end
-          it 'has no roots' do expect(@tax.root_count).to eq(0) end
-          it 'has 2 folk' do expect(@tax.folksonomy_count).to eq(2) end
+          it 'taxonomy has 2 tags' do expect(@tax.count_tags).to eq(2) end
+          it 'has no roots' do expect(@tax.count_roots).to eq(0) end
+          it 'has 2 folk' do expect(@tax.count_folksonomies).to eq(2) end
           it ':a is folk' do expect(@a).to be_folk end
           it ':b is folk' do expect(@b).to be_folk end
         end
@@ -814,9 +836,9 @@ describe 'Taxonomy' do
             @a =@tax.get_tag_by_name(:a)
             @b =@tax.get_tag_by_name(:b)
           end
-          it 'taxonomy has 2 tags' do expect(@tax.tag_count).to eq(2) end
-          it 'has no roots' do expect(@tax.root_count).to eq(0) end
-          it 'has 2 folk' do expect(@tax.folksonomy_count).to eq(2) end
+          it 'taxonomy has 2 tags' do expect(@tax.count_tags).to eq(2) end
+          it 'has no roots' do expect(@tax.count_roots).to eq(0) end
+          it 'has 2 folk' do expect(@tax.count_folksonomies).to eq(2) end
           it ':a is folk' do expect(@a).to be_folk end
           it ':b is folk' do expect(@b).to be_folk end
         end
@@ -833,9 +855,9 @@ describe 'Taxonomy' do
             @a =@tax.get_tag_by_name(:a)
             @b =@tax.get_tag_by_name(:b)
           end
-          it 'taxonomy has 2 tags' do expect(@tax.tag_count).to eq(2) end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'taxonomy has 2 tags' do expect(@tax.count_tags).to eq(2) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
           it ':a is root' do expect(@a).to be_root end
           it ':a has no parent' do expect(@a).to_not have_parent end
           it ':a has child' do expect(@a).to have_child end
@@ -855,9 +877,9 @@ describe 'Taxonomy' do
             @a =@tax.get_tag_by_name(:a)
             @b =@tax.get_tag_by_name(:b)
           end
-          it 'taxonomy has 2 tags' do expect(@tax.tag_count).to eq(2) end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'taxonomy has 2 tags' do expect(@tax.count_tags).to eq(2) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
           it ':a is root' do expect(@a).to be_root end
           it ':a has no parent' do expect(@a).to_not have_parent end
           it ':a has child' do expect(@a).to have_child end
@@ -875,7 +897,7 @@ describe 'Taxonomy' do
             @tax.dag_prevent
             @tax.instantiate(ddl)
           end
-          it 'taxonomy empty' do expect(@tax.tag_count).to eq(0) end
+          it 'taxonomy empty' do expect(@tax.count_tags).to eq(0) end
         end
       end
     end
@@ -891,9 +913,9 @@ describe 'Taxonomy' do
             @b =@tax.get_tag_by_name(:b)
             @c =@tax.get_tag_by_name(:c)
           end
-          it 'taxonomy has 3 tags' do expect(@tax.tag_count).to eq(3) end
-          it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'taxonomy has 3 tags' do expect(@tax.count_tags).to eq(3) end
+          it 'has 2 roots' do expect(@tax.count_roots).to eq(2) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
           it ':a is root' do expect(@a).to be_root end
           it ':b is root' do expect(@b).to be_root end
           it ':a has no parent' do expect(@a).to_not have_parent end
@@ -915,9 +937,9 @@ describe 'Taxonomy' do
             @b =@tax.get_tag_by_name(:b)
             @c =@tax.get_tag_by_name(:c)
           end
-          it 'taxonomy has 3 tags' do expect(@tax.tag_count).to eq(3) end
-          it 'has 1 roots' do expect(@tax.root_count).to eq(1) end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'taxonomy has 3 tags' do expect(@tax.count_tags).to eq(3) end
+          it 'has 1 roots' do expect(@tax.count_roots).to eq(1) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
           it ':a is root' do expect(@a).to be_root end
           it ':a has no parent' do expect(@a).to_not have_parent end
           it ':a has child' do expect(@a).to have_child end
@@ -939,9 +961,9 @@ describe 'Taxonomy' do
             @b1 =@tax.get_tag_by_name(:b1)
             @b2 =@tax.get_tag_by_name(:b2)
           end
-          it 'taxonomy has 4 tags' do expect(@tax.tag_count).to eq(4) end
-          it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'taxonomy has 4 tags' do expect(@tax.count_tags).to eq(4) end
+          it 'has 2 roots' do expect(@tax.count_roots).to eq(2) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
           it ':a1 is root' do expect(@a1).to be_root end
           it ':a2 is root' do expect(@a2).to be_root end
           it ':a1 has no parent' do expect(@a1).to_not have_parent end
@@ -967,9 +989,9 @@ describe 'Taxonomy' do
             @b =@tax.get_tag_by_name(:b)
             @c =@tax.get_tag_by_name(:c)
           end
-          it 'taxonomy has 3 tags' do expect(@tax.tag_count).to eq(3) end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'taxonomy has 3 tags' do expect(@tax.count_tags).to eq(3) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
           it ':a is root' do expect(@a).to be_root end
           it ':a has no parent' do expect(@a).to_not have_parent end
           it ':a has child' do expect(@a).to have_child end
@@ -994,9 +1016,9 @@ describe 'Taxonomy' do
             @c1 =@tax.get_tag_by_name(:c1)
             @c2 =@tax.get_tag_by_name(:c2)
           end
-          it 'taxonomy has 5 tags' do expect(@tax.tag_count).to eq(5) end
-          it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'taxonomy has 5 tags' do expect(@tax.count_tags).to eq(5) end
+          it 'has 2 roots' do expect(@tax.count_roots).to eq(2) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
           it ':a1 is root' do expect(@a1).to be_root end
           it ':a2 is root' do expect(@a2).to be_root end
           it ':a1 has no parent' do expect(@a1).to_not have_parent end
@@ -1027,9 +1049,9 @@ describe 'Taxonomy' do
             @c21 = @tax.get_tag_by_name(:c21)
             @c22 = @tax.get_tag_by_name(:c22)
           end
-          it 'taxonomy has 6 tags' do expect(@tax.tag_count).to eq(6) end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'taxonomy has 6 tags' do expect(@tax.count_tags).to eq(6) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
           it ':a is root' do expect(@a).to be_root end
           it ':a has no parent' do expect(@a).to_not have_parent end
           it ':a has 3 children' do expect(@a.children.size).to eq(3) end
@@ -1061,9 +1083,9 @@ describe 'Taxonomy' do
             @c21 = @tax.get_tag_by_name(:c21)
             @c22 = @tax.get_tag_by_name(:c22)
           end
-          it 'taxonomy has 6 tags' do expect(@tax.tag_count).to eq(6) end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'taxonomy has 6 tags' do expect(@tax.count_tags).to eq(6) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
           it ':a is root' do expect(@a).to be_root end
           it ':a has no parent' do expect(@a).to_not have_parent end
           it ':a has 3 children' do expect(@a.children.size).to eq(3) end
@@ -1094,9 +1116,9 @@ describe 'Taxonomy' do
             @carp = @tax.get_tag_by_name(:carp)
             @herring = @tax.get_tag_by_name(:herring)
           end
-          it 'taxonomy has 5 tags' do expect(@tax.tag_count).to eq(5) end
-          it 'has 1 root' do expect(@tax.root_count).to eq(1) end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'taxonomy has 5 tags' do expect(@tax.count_tags).to eq(5) end
+          it 'has 1 root' do expect(@tax.count_roots).to eq(1) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
           it ':animal is root' do expect(@animal).to be_root end
           it ':animal has no parent' do expect(@animal).to_not have_parent end
           it ':animal has 2 children' do expect(@animal.children.size).to eq(2) end
@@ -1120,9 +1142,9 @@ describe 'Taxonomy' do
             @animal = @tax.get_tag_by_name(:animal)
             @food = @tax.get_tag_by_name(:food)
           end
-          it 'taxonomy has 11 tags' do expect(@tax.tag_count).to eq(11) end
-          it 'has 2 roots' do expect(@tax.root_count).to eq(2) end
-          it 'has no folks' do expect(@tax.folksonomy_count).to eq(0) end
+          it 'taxonomy has 11 tags' do expect(@tax.count_tags).to eq(11) end
+          it 'has 2 roots' do expect(@tax.count_roots).to eq(2) end
+          it 'has no folks' do expect(@tax.count_folksonomies).to eq(0) end
           it ':animal is root' do expect(@animal).to be_root end
           it ':food is root' do expect(@food).to be_root end
         end
@@ -1194,38 +1216,43 @@ describe 'Taxonomy' do
     end
     describe Taxonomy do
       describe :query_items do
-        describe ':a(i1)>[:b1(i2)>[:c1(i3),:c2(i3,i4)],:b2>[:c3,:c4(i4)]]' do
+        describe 'tax=album1+album2+F,album1=:a(i1)>[:b1(i2)>[:c1(i3),:c2(i3,i4)],:b2>[:c3,:c4(i4)]],F=:x(i6),album2=:c4(i5)' do
           describe 'basic syntax' do
-            tests = [['#a',[:i1,:i2,:i3,:i4]]\
-                    ,[':a',[:i1,:i2,:i3,:i4]]\
-                    ,['#b1',[:i2,:i3,:i4]]\
-                    ,['#b2',[:i4]]\
-                    ,['#c1',[:i3]]\
-                    ,['#c2',[:i3,:i4]]\
-                    ,['#c3',[]]\
-                    ,['#c4',[:i4]]\
-                    ,['#x',[:i5]]\
-                    ,['#c4|#c1',[:i3,:i4]]\
-                    ,['#c4&#c1',[]]\
-                    ,['#c4|#c2',[:i3,:i4]]\
-                    ,['#c4&#c2',[:i4]]\
-                    ,['#c4#c2',[:i4]]\
-                    ,['(#c4&#c2)|#x',[:i4,:i5]]\
+            tests = [['#a',[:i1,:i2,:i3,:i4,:i5],[:i1,:i2,:i3,:i4]]\
+                    ,[':a',[:i1,:i2,:i3,:i4,:i5],[:i1,:i2,:i3,:i4]]\
+                    ,['#b1',[:i2,:i3,:i4],[:i2,:i3,:i4]]\
+                    ,['#b2',[:i4,:i5],[:i4]]\
+                    ,['#c1',[:i3],[:i3]]\
+                    ,['#c2',[:i3,:i4],[:i3,:i4]]\
+                    ,['#c3',[],[]]\
+                    ,['#c4',[:i4,:i5],[:i4]]\
+                    ,['#x',[:i6],[:i6]]\
+                    ,['#c4|#c1',[:i3,:i4,:i5],[:i3,:i4]]\
+                    ,['#c4&#c1',[],[]]\
+                    ,['#c4|#c2',[:i3,:i4,:i5],[:i3,:i4]]\
+                    ,['#c4&#c2',[:i4],[:i4]]\
+                    ,['#c4#c2',[:i4],[:i4]]\
+                    ,['(#c4&#c2)|#x',[:i4,:i6],[:i4,:i6]]\
                     ]
             tests.each do |test|
               MongoMapper.connection.drop_database('tagm8')
               tax = Taxonomy.new
-              alm = tax.add_album('alm')
+              alm1 = tax.add_album('alm1')
+              alm2 = tax.add_album('alm2')
               tax.instantiate(':a>[:b1>[:c1,:c2],:b2>[:c3,:c4]]')
               #puts tax.tags
               #Item.taxonomy = tax
-              alm.add_item("i1\n#a")
-              alm.add_item("i2\n#b1")
-              alm.add_item("i3\n#c1,c2")
-              alm.add_item("i4\n#c2,c4")
-              alm.add_item("i5\n#x")
-              result = tax.query_items(test[0]).map {|item| item.name.to_sym}.sort
-              it "query=#{test[0]}, result=#{test[1]}" do expect(result).to eq(test[1]) end
+              alm1.add_item("i1\n#a")
+              alm1.add_item("i2\n#b1")
+              alm1.add_item("i3\n#c1,c2")
+              alm1.add_item("i4\n#c2,c4")
+              alm1.add_item("i6\n#x")
+              alm2.add_item("i5\n#c4")
+#              puts "taxonomies=#{Taxonomy.taxonomies}, albums=#{Album.albums}, Taxonomy.taxonomy_count=#{Taxonomy.taxonomy_count}"
+              result_tax = tax.query_items(test[0]).map {|item| item.name.to_sym}.sort
+              result_alm1 = alm1.query_items(test[0]).map {|item| item.name.to_sym}.sort
+              it "tax_query=#{test[0]}, result=#{test[1]}" do expect(result_tax).to eq(test[1]) end
+              it "album1_query=#{test[0]}, result=#{test[2]}" do expect(result_alm1).to eq(test[2]) end
             end
           end
           describe 'alternate, poor or bad syntax' do
