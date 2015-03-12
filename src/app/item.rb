@@ -35,6 +35,8 @@ class Album < PAlbum
     end
   end
 
+  def has_item?(name=nil) count_items(name) > 0 end
+
   def query_items(query)
     taxonomy.query_items(query)&items
   end
@@ -42,6 +44,13 @@ class Album < PAlbum
 end
 
 class Item < PItem
+
+  def self.exists?(name=nil)
+    name.nil? ? self.count > 0 : self.count_by_name(name) > 0
+  end
+
+#  # open existing item by name
+#  def self.open(name) self.get_by_name(name) end
 
   def initialize(album)
     super(date:Time.now,album:album)

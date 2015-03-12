@@ -242,6 +242,18 @@ class PAlbum
     PAlbum.all.map {|alm| alm.name}
   end
 
+  def count_items(name=nil)
+    if name.nil?
+      items.count
+    else
+      items.select {|item| item.name == name}.count
+    end
+  end
+
+  def list_items
+    items.map {|item| item.name}
+  end
+
 end
 
 class PItem
@@ -255,6 +267,19 @@ class PItem
   key :tag_ids, Array
   many :tags, :class_name => 'PTag', :in => :tag_ids
   belongs_to :album, :class_name => 'PAlbum'
+
+  def self.count_by_name(name)
+    PItem.where(name:name.to_s).count
+  end
+
+#  # only needed if Item.open(name) is supported
+#  def self.get_by_name(name)
+#    PItem.first(name:name)
+#  end
+
+  def self.list
+    PItem.all.map {|tax| tax.name}
+  end
 
   def union_tags(tags)
     puts "Items.union_tags 1: self.tags=#{self.tags}, tags=#{tags}"
