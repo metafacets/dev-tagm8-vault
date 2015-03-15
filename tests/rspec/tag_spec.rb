@@ -3,10 +3,11 @@ require_relative '../../src/app/tag'
 require_relative '../../tests/fixtures/animal_01'
 include AnimalTaxonomy
 
+Tagm8Db.open('tagm8-test')
 
 describe 'Taxonomy' do
   context 'class methods' do
-    MongoMapper.connection.drop_database('tagm8')
+    Tagm8Db.wipe
     tax1 = Taxonomy.new(name='tax1')
     Taxonomy.new(name='tax2')
     Taxonomy.new(name='tax3')

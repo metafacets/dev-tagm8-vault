@@ -1,9 +1,11 @@
 require 'rspec'
 require_relative '../../src/app/item'
 
+Tagm8Db.open('tagm8-test')
+
 describe Item do
   context 'class methods' do
-    MongoMapper.connection.drop_database('tagm8')
+    Tagm8Db.wipe
     tax1 = Taxonomy.new('tax1')
     tax2 = Taxonomy.new('tax2')
     alm1 = tax1.add_album('alm1')

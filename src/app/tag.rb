@@ -31,9 +31,7 @@ class Taxonomy < PTaxonomy
 
   def empty?; !has_tag? && !has_root? && !has_folksonomy? end
 
-  def show(item)
-    eval('#{'+item+'}')
-  end
+  def show(item) eval(item) end
 
 #  attr_reader :dag
 
