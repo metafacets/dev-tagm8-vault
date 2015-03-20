@@ -98,8 +98,8 @@ class Taxonomy < PTaxonomy
 
   def deprecate(tag_ddl)
     Ddl.parse(tag_ddl)
-    tags = Ddl.tags.map {|name| get_lazy_tag(name)}
-    Ddl.tags.each {|name| delete_tag(name)} if Ddl.has_tags?
+    tags = Ddl.tags.map {|name| get_tag_by_name(name)}.select{|tag| tag unless tag.nil?}
+    tags.each {|tag| delete_tag(tag.name)} unless tags.empty?
     tags
   end
 
