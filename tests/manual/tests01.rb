@@ -7,7 +7,7 @@ Tagm8Db.wipe
 Debug.new(tags:[:test]) # comment out to turn off
 
 tax = Taxonomy.new
-tax.dag_fix
+tax.set_dag('fix')
 tax.add_tag(:mouse,:animal)
 Debug.show(note:1,tags:[:test],vars:[['tags',tax.tags],['roots',tax.roots],['folks',tax.folksonomy]])
 tax.add_tags([:cat, :dog], :mammal)
