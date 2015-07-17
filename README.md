@@ -1,6 +1,6 @@
 # tagm8-vault
 
-Prototype Semantic vault
+Prototype Semantic Vault
 
 To run use:
 
