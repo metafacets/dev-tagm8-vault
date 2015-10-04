@@ -141,24 +141,29 @@ class Facade
 
   def dag?(taxonomy_name)
     begin
-      raise "Taxonomy \"#{taxonomy_name}\" not found" unless Taxonomy.exists?(taxonomy_name)
+      taxonomy_name = 'nil:NilClass' if taxonomy_name.nil?
+      raise 'taxonomy unspecified' if taxonomy_name.empty? || taxonomy_name == 'nil:NilClass'
+      raise "taxonomy \"#{taxonomy_name}\" not found" unless Taxonomy.exists?(taxonomy_name)
       [0,'',Taxonomy.lazy(taxonomy_name).dag]
     rescue => e
-    [1,e]
+      [1,"dag? for taxonomy \"#{taxonomy_name}\" failed: #{e}"]
     end
   end
 
   def dag_set(taxonomy_name,dag)
     begin
-      raise "Taxonomy \"#{taxonomy_name}\" not found" unless Taxonomy.exists?(taxonomy_name)
-      raise "set_dag(#{dag}) invalid dag value" unless ['prevent','fix','false'].include?(dag)
+      taxonomy_name = 'nil:NilClass' if taxonomy_name.nil?
+      raise 'taxonomy unspecified' if taxonomy_name.empty? || taxonomy_name == 'nil:NilClass'
+      raise "taxonomy \"#{taxonomy_name}\" not found" unless Taxonomy.exists?(taxonomy_name)
+      dag = 'nil:NilClass' if dag.nil?
+      raise "dag \"#{dag}\" invalid, use \"prevent\", \"fix\" or \"false\"" unless ['prevent','fix','false'].include?(dag)
       tax = Taxonomy.lazy(taxonomy_name)
       tax.set_dag(dag)
       confirmed = tax.dag
       raise "dag = #{confirmed}" if confirmed != dag
-      [0,"Taxonomy \"#{taxonomy_name}\" dag set to #{dag}"]
+      [0,"Taxonomy \"#{taxonomy_name}\" dag set to \"#{dag}\""]
     rescue => e
-      [1,"dag_#{dag} failed: #{e}"]
+      [1,"dag_#{dag} for taxonomy \"#{taxonomy_name}\" failed: #{e}"]
     end
   end
 
@@ -249,28 +254,34 @@ class Facade
 
   def count_links(taxonomy_name)
     begin
-      raise "Taxonomy \"#{taxonomy_name}\" not found" unless Taxonomy.exists?(taxonomy_name)
-      [0,'',Taxonomy.lazy(taxonomy_name).count_links]
+      taxonomy_name = 'nil:NilClass' if taxonomy_name.nil?
+      raise 'taxonomy unspecified' if taxonomy_name.empty? || taxonomy_name == 'nil:NilClass'
+      raise "taxonomy \"#{taxonomy_name}\" not found" unless Taxonomy.exists?(taxonomy_name)
+      [0,'',Taxonomy.get_by_name(taxonomy_name).count_links]
     rescue => e
-      [1,"count_links failed: #{e}"]
+      [1,"count_links in taxonomy \"#{taxonomy_name}\" failed: #{e}"]
     end
   end
 
   def count_roots(taxonomy_name)
     begin
-      raise "Taxonomy \"#{taxonomy_name}\" not found" unless Taxonomy.exists?(taxonomy_name)
-      [0,'',Taxonomy.lazy(taxonomy_name).count_roots]
+      taxonomy_name = 'nil:NilClass' if taxonomy_name.nil?
+      raise 'taxonomy unspecified' if taxonomy_name.empty? || taxonomy_name == 'nil:NilClass'
+      raise "taxonomy \"#{taxonomy_name}\" not found" unless Taxonomy.exists?(taxonomy_name)
+      [0,'',Taxonomy.get_by_name(taxonomy_name).count_roots]
     rescue => e
-      [1,"count_roots failed: #{e}"]
+      [1,"count_roots in taxonomy \"#{taxonomy_name}\" failed: #{e}"]
     end
   end
 
   def count_folksonomies(taxonomy_name)
     begin
-      raise "Taxonomy \"#{taxonomy_name}\" not found" unless Taxonomy.exists?(taxonomy_name)
-      [0,'',Taxonomy.lazy(taxonomy_name).count_folksonomies]
+      taxonomy_name = 'nil:NilClass' if taxonomy_name.nil?
+      raise 'taxonomy unspecified' if taxonomy_name.empty? || taxonomy_name == 'nil:NilClass'
+      raise "taxonomy \"#{taxonomy_name}\" not found" unless Taxonomy.exists?(taxonomy_name)
+      [0,'',Taxonomy.get_by_name(taxonomy_name).count_folksonomies]
     rescue => e
-      [1,"count_folksonomies failed: #{e}"]
+      [1,"count_folksonomies in taxonomy \"#{taxonomy_name}\" failed: #{e}"]
     end
   end
 
